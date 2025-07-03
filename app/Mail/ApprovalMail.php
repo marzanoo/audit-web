@@ -43,9 +43,9 @@ class ApprovalMail extends Mailable
         $dept = $karyawan->dept;
 
         // Cari manager berdasarkan dept dan remarks
-        $manager = Karyawan::where('dept', $dept)->where('remarks', 'REGEXP', 'MGR[^a-zA-Z0-9]*' . $dept)->first();
+        $manager = Karyawan::where('dept', $dept)->where('remarks', 'LIKE', '%MGR% ' . $dept . '%')->first();
 
-        $managerName = $manager && $manager->name !== 'VACANT' ? $manager->name : 'Manager';
+        $managerName = $manager && $manager->emp_name !== 'VACANT' ? $manager->emp_name : 'Manager';
 
         $approveUrl = route('audit.approve', ['id' => $this->auditAnswer->id]);
 

@@ -21,21 +21,26 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
     protected $auditAnswer;
     protected $signatures;
     protected $grade;
+    protected $picName;
+    protected $chargeFees;
     protected $rowHeights = [];
+    protected $totalRows;
 
-    public function __construct($formattedData, $auditAnswer, $grade, $signatures = null)
+    public function __construct($formattedData, $auditAnswer, $grade, $signatures = null, $chargeFees = null, $picName = null)
     {
         $this->formattedData = $formattedData;
         $this->auditAnswer = $auditAnswer;
         $this->grade = $grade;
         $this->signatures = $signatures;
+        $this->chargeFees = $chargeFees;
+        $this->picName = $picName;
     }
 
-    /**
-     * @return \Illuminate\Support\Collection
-     */
     public function collection()
     {
+        $data = [];
+
+        // Catatan
         $data[] = [
             'Kategori' => 'CATATAN:',
             'Tema' => 'Foto standar dan foto temuan ditampilkan langsung di dalam dokumen Excel.',
@@ -47,7 +52,7 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
             'Foto Temuan' => ''
         ];
 
-        // Tambahkan baris kosong
+        // Baris kosong
         $data[] = [
             'Kategori' => '',
             'Tema' => '',
@@ -59,10 +64,9 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
             'Foto Temuan' => ''
         ];
 
-        $currentRow = 4; // Mulai dari baris 4 (setelah header dan catatan)
+        $currentRow = 4; // Mulai dari baris 4
 
         foreach ($this->formattedData as $detail) {
-            // Tambahkan temuan auditees jika ada
             $temuan = '';
             foreach ($detail['auditees'] as $auditee) {
                 $nameKey = isset($auditee['auditee']) ? 'auditee' : 'name';
@@ -82,29 +86,24 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
 
             $data[] = $row;
 
-            // Calculate row height based on content
-            $baseHeight = 80; // Base height for rows
-            $imageHeight = 120; // Height per image
-
-            // Set height for standar foto
+            // Hitung tinggi baris
+            $baseHeight = 80;
+            $imageHeight = 120;
             if ($detail['standar_foto']) {
                 $this->rowHeights[$currentRow] = $imageHeight;
             } else {
                 $this->rowHeights[$currentRow] = $baseHeight;
             }
-
-            // Adjust height for temuan images if needed
             if (count($detail['images']) > 0) {
                 $this->rowHeights[$currentRow] = max(
                     $this->rowHeights[$currentRow],
                     $baseHeight + ($imageHeight * min(count($detail['images']), 3))
-                ); // Limit to 3 images in height calc
+                );
             }
-
             $currentRow++;
         }
 
-        // Tambahkan total score dan grade di baris terakhir
+        // Total Score
         $data[] = [
             'Kategori' => '',
             'Tema' => '',
@@ -116,6 +115,7 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
             'Foto Temuan' => ''
         ];
 
+        // Grade
         $data[] = [
             'Kategori' => '',
             'Tema' => '',
@@ -127,6 +127,141 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
             'Foto Temuan' => ''
         ];
 
+        // Charge Fees (jika grade != Diamond)
+        if ($this->grade != 'Diamond' && $this->chargeFees) {
+            $data[] = [
+                'Kategori' => '',
+                'Tema' => '',
+                'Standar' => '',
+                'Foto Standar' => '',
+                'Variabel' => '',
+                'Score' => '',
+                'Temuan' => '',
+                'Foto Temuan' => ''
+            ];
+
+            $data[] = [
+                'Kategori' => 'CHARGE FEES',
+                'Tema' => '',
+                'Standar' => '',
+                'Foto Standar' => '',
+                'Variabel' => '',
+                'Score' => '',
+                'Temuan' => '',
+                'Foto Temuan' => ''
+            ];
+
+            $data[] = [
+                'Kategori' => 'Tarif Denda per Temuan',
+                'Tema' => 'Rp ' . number_format($this->chargeFees['feeRate'], 0, ',', '.'),
+                'Standar' => '',
+                'Foto Standar' => '',
+                'Variabel' => '',
+                'Score' => '',
+                'Temuan' => '',
+                'Foto Temuan' => ''
+            ];
+
+            $data[] = [
+                'Kategori' => 'Total Temuan',
+                'Tema' => $this->chargeFees['totalFindings'],
+                'Standar' => 'Total Denda',
+                'Foto Standar' => 'Rp ' . number_format($this->chargeFees['totalFee'], 0, ',', '.'),
+                'Variabel' => '',
+                'Score' => '',
+                'Temuan' => '',
+                'Foto Temuan' => ''
+            ];
+
+            $data[] = [
+                'Kategori' => 'Denda Tertuduh',
+                'Tema' => '',
+                'Standar' => '',
+                'Foto Standar' => '',
+                'Variabel' => '',
+                'Score' => '',
+                'Temuan' => '',
+                'Foto Temuan' => ''
+            ];
+
+            foreach ($this->chargeFees['tertuduhDetails'] as $name => $detail) {
+                $data[] = [
+                    'Kategori' => $name,
+                    'Tema' => $detail['dept'] ?? '-',
+                    'Standar' => 'Jumlah Temuan: ' . $detail['findings'],
+                    'Foto Standar' => 'Denda: Rp ' . number_format($detail['fee'], 0, ',', '.'),
+                    'Variabel' => '',
+                    'Score' => '',
+                    'Temuan' => '',
+                    'Foto Temuan' => ''
+                ];
+            }
+
+            $data[] = [
+                'Kategori' => 'Denda PIC Area (50%)',
+                'Tema' => $this->picName ?? 'Tidak Ada',
+                'Standar' => 'Total Temuan: ' . $this->chargeFees['totalFindings'],
+                'Foto Standar' => 'Denda: Rp ' . number_format($this->chargeFees['picAreaFee'], 0, ',', '.'),
+                'Variabel' => '',
+                'Score' => '',
+                'Temuan' => '',
+                'Foto Temuan' => ''
+            ];
+
+            if (!empty($this->chargeFees['managerDetails'])) {
+                $data[] = [
+                    'Kategori' => 'Denda Manager (Rp 1.000/temuan)',
+                    'Tema' => '',
+                    'Standar' => '',
+                    'Foto Standar' => '',
+                    'Variabel' => '',
+                    'Score' => '',
+                    'Temuan' => '',
+                    'Foto Temuan' => ''
+                ];
+
+                foreach ($this->chargeFees['managerDetails'] as $name => $detail) {
+                    $data[] = [
+                        'Kategori' => $name,
+                        'Tema' => $detail['dept'],
+                        'Standar' => 'Jumlah Temuan: ' . $detail['findings'],
+                        'Foto Standar' => 'Denda: Rp ' . number_format($detail['fee'], 0, ',', '.'),
+                        'Variabel' => '',
+                        'Score' => '',
+                        'Temuan' => '',
+                        'Foto Temuan' => ''
+                    ];
+                }
+            }
+
+            if (!empty($this->chargeFees['gmDetails'])) {
+                $data[] = [
+                    'Kategori' => 'Denda General Manager (Rp 2.000/temuan)',
+                    'Tema' => '',
+                    'Standar' => '',
+                    'Foto Standar' => '',
+                    'Variabel' => '',
+                    'Score' => '',
+                    'Temuan' => '',
+                    'Foto Temuan' => ''
+                ];
+
+                foreach ($this->chargeFees['gmDetails'] as $name => $detail) {
+                    $data[] = [
+                        'Kategori' => $name,
+                        'Tema' => $detail['dept'],
+                        'Standar' => 'Jumlah Temuan: ' . $detail['findings'],
+                        'Foto Standar' => 'Denda: Rp ' . number_format($detail['fee'], 0, ',', '.'),
+                        'Variabel' => '',
+                        'Score' => '',
+                        'Temuan' => '',
+                        'Foto Temuan' => ''
+                    ];
+                }
+            }
+        }
+
+        // Baris kosong
         $data[] = [
             'Kategori' => '',
             'Tema' => '',
@@ -138,7 +273,7 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
             'Foto Temuan' => ''
         ];
 
-        // Tambahkan header tanda tangan
+        // Header Tanda Tangan
         $data[] = [
             'Kategori' => 'TANDA TANGAN',
             'Tema' => '',
@@ -150,7 +285,7 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
             'Foto Temuan' => ''
         ];
 
-        // Tambahkan row untuk tanda tangan (3 kolom)
+        // Row untuk tanda tangan (empty row)
         $data[] = [
             'Kategori' => '',
             'Tema' => '',
@@ -162,7 +297,7 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
             'Foto Temuan' => ''
         ];
 
-        // Tambahkan row kosong untuk ruang tanda tangan
+        // Row kosong untuk ruang tanda tangan (labels: Auditor, Fasilitator, Auditee)
         $data[] = [
             'Kategori' => 'Auditor:',
             'Tema' => '',
@@ -174,7 +309,7 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
             'Foto Temuan' => ''
         ];
 
-        // Tambahkan nama-nama penanda tangan
+        // Nama penanda tangan
         $data[] = [
             'Kategori' => $this->auditAnswer->auditor->name ?? 'N/A',
             'Tema' => '',
@@ -186,7 +321,7 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
             'Foto Temuan' => ''
         ];
 
-        // Tambahkan tanggal tanda tangan
+        // Tanggal tanda tangan
         $data[] = [
             'Kategori' => 'Tanggal: ' . ($this->auditAnswer->created_at ? $this->auditAnswer->created_at->format('d-m-Y') : 'N/A'),
             'Tema' => '',
@@ -198,6 +333,7 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
             'Foto Temuan' => ''
         ];
 
+        $this->totalRows = count($data);
         return collect($data);
     }
 
@@ -274,7 +410,7 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
         $sheet->mergeCells('A' . $signatureImageRow . ':B' . $signatureImageRow);
         $sheet->mergeCells('C' . $signatureImageRow . ':D' . $signatureImageRow);
         $sheet->mergeCells('E' . $signatureImageRow . ':F' . $signatureImageRow);
-        $sheet->getRowDimension($signatureImageRow)->setRowHeight(100); // Tinggi untuk ruang tanda tangan - INCREASED
+        $sheet->getRowDimension($signatureImageRow)->setRowHeight(100);
 
         // Merge cells untuk nama tanda tangan
         $nameSignatureRow = $lastRow - 2;
@@ -322,20 +458,20 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
 
                 // Set default height untuk baris lain
                 $lastRow = $event->sheet->getHighestRow();
-                for ($i = 4; $i <= $lastRow - 9; $i++) { // Adjusted for signature rows
+                for ($i = 4; $i <= $lastRow - 9; $i++) {
                     if (!isset($this->rowHeights[$i])) {
                         $event->sheet->getRowDimension($i)->setRowHeight(50);
                     }
                 }
 
-                // Set larger height for signature row - UPDATED
+                // Set larger height for signature row
                 $signatureImageRow = $lastRow - 3;
                 $event->sheet->getRowDimension($signatureImageRow)->setRowHeight(150);
 
                 // Auto-filter untuk header
                 $event->sheet->setAutoFilter('A1:H1');
 
-                // Freeze panes - tetapkan header tetap terlihat saat scroll
+                // Freeze panes
                 $event->sheet->freezePane('A4');
             },
         ];
@@ -344,7 +480,7 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
     public function drawings()
     {
         $drawings = [];
-        $currentRow = 4; // Mulai dari baris 4 (setelah header dan catatan)
+        $currentRow = 4;
 
         foreach ($this->formattedData as $detail) {
             // Tambahkan gambar standar jika ada
@@ -385,7 +521,7 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
                         $drawing->setOffsetY($offsetY);
                         $drawings[] = $drawing;
 
-                        $offsetY += 125; // Space between images
+                        $offsetY += 125;
                     }
                 }
             }
@@ -394,10 +530,9 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
         }
 
         // Add signature images
-        $lastRow = count($this->formattedData) + 7; // Adjust based on the data rows + header rows + grade/score rows
-        $signatureImageRow = $lastRow;
+        $signatureImageRow = $this->totalRows - 2;
 
-        // Auditor signature - UPDATED
+        // Auditor signature
         if ($this->signatures && $this->signatures->auditor_signature) {
             $auditorSignPath = storage_path('app/public/' . $this->signatures->auditor_signature);
             if (file_exists($auditorSignPath)) {
@@ -410,12 +545,12 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
                 $drawing->setResizeProportional(true);
                 $drawing->setCoordinates('A' . $signatureImageRow);
                 $drawing->setOffsetX(10);
-                $drawing->setOffsetY(35); // INCREASED from 10 to 35
+                $drawing->setOffsetY(35);
                 $drawings[] = $drawing;
             }
         }
 
-        // Manager signature - UPDATED
+        // Manager signature
         if ($this->signatures && $this->signatures->facilitator_signature) {
             $managerSignPath = storage_path('app/public/' . $this->signatures->facilitator_signature);
             if (file_exists($managerSignPath)) {
@@ -428,12 +563,12 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
                 $drawing->setResizeProportional(true);
                 $drawing->setCoordinates('C' . $signatureImageRow);
                 $drawing->setOffsetX(10);
-                $drawing->setOffsetY(35); // INCREASED from 10 to 35
+                $drawing->setOffsetY(35);
                 $drawings[] = $drawing;
             }
         }
 
-        // Auditee signature - UPDATED
+        // Auditee signature
         if ($this->signatures && $this->signatures->auditee_signature) {
             $auditeeSignPath = storage_path('app/public/' . $this->signatures->auditee_signature);
             if (file_exists($auditeeSignPath)) {
@@ -446,7 +581,7 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
                 $drawing->setResizeProportional(true);
                 $drawing->setCoordinates('E' . $signatureImageRow);
                 $drawing->setOffsetX(10);
-                $drawing->setOffsetY(35); // INCREASED from 10 to 35
+                $drawing->setOffsetY(35);
                 $drawings[] = $drawing;
             }
         }

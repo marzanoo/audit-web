@@ -94,6 +94,86 @@
                         </tr>
                     </tbody>
                 </table>
+                @if ($grade != 'Diamond')
+                <div class="mt-8">
+                    <h3 class="text-xl font-semibold mb-4">Charge Fees</h3>
+                    <p>Tarif Denda: Rp {{ number_format($chargeFees['feeRate'], 0, ',', '.') }} per temuan</p>
+                    <p>Total Temuan: {{ $chargeFees['totalFindings'] }} | Total Denda: Rp {{ number_format($chargeFees['totalFee'], 0, ',', '.') }}</p>
+
+                    <h4 class="text-lg font-medium mt-4">Denda Tertuduh:</h4>
+                    <table class="min-w-full bg-white border border-gray-200 mt-2">
+                        <thead>
+                            <tr>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Nama</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Departemen</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Jumlah Temuan</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Denda</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($chargeFees['tertuduhDetails'] as $name => $detail)
+                            <tr>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $name }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $detail['dept'] ?? '-' }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $detail['findings'] }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">Rp {{ number_format($detail['fee'], 0, ',', '.') }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+
+                    <h4 class="text-lg font-medium mt-4">Denda PIC Area (50%):</h4>
+                    <p>PIC: {{ $auditAnswer->pic_name ?? 'Tidak Ada' }} | Total Temuan: {{ $chargeFees['totalFindings'] }} | Denda: Rp {{ number_format($chargeFees['picAreaFee'], 0, ',', '.') }}</p>
+
+                    @if (!empty($chargeFees['managerDetails']))
+                    <h4 class="text-lg font-medium mt-4">Denda Manager (Rp 1.000/temuan):</h4>
+                    <table class="min-w-full bg-white border border-gray-200 mt-2">
+                        <thead>
+                            <tr>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Nama</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Departemen</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Jumlah Temuan</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Denda</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($chargeFees['managerDetails'] as $name => $detail)
+                            <tr>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $name }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $detail['dept'] }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $detail['findings'] }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">Rp {{ number_format($detail['fee'], 0, ',', '.') }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    @endif
+
+                    @if (!empty($chargeFees['gmDetails']))
+                    <h4 class="text-lg font-medium mt-4">Denda General Manager (Rp 2.000/temuan):</h4>
+                    <table class="min-w-full bg-white border border-gray-200 mt-2">
+                        <thead>
+                            <tr>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Nama</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Departemen</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Jumlah Temuan</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Denda</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($chargeFees['gmDetails'] as $name => $detail)
+                            <tr>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $name }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $detail['dept'] }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $detail['findings'] }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">Rp {{ number_format($detail['fee'], 0, ',', '.') }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    @endif
+                </div>
+                @endif
             </div>
         </div>
     </div>

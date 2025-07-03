@@ -42,15 +42,19 @@
                 <span class="text-lg w-2/3">{{ $item->standar_variabel }}</span>
             </div>
 
-            <div class="flex justify-between">
-                <span class="text-lg font-semibold w-1/3">Foto</span>
-                <span class="text-lg w-2/3">
-                    @if ($item->standar_foto)
-                        <img src="{{ asset('storage/' . $item->standar_foto) }}" alt="Foto Variabel" class="w-32 h-32 object-cover">
+            <div class="mb-2">
+                <span class="text-lg font-semibold block mb-2">Foto Standar:</span>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    @if(count($item->standarFotos) > 0)
+                        @foreach($item->standarFotos as $foto)
+                            <img src="{{ asset('storage/' . $foto->image_path) }}" 
+                                alt="Foto Standar" 
+                                class="w-24 h-24 object-cover rounded-lg shadow-md">
+                        @endforeach
                     @else
-                        Tidak ada foto
+                        <span class="text-gray-500">Tidak ada foto</span>
                     @endif
-                </span>
+                </div>
             </div>
 
             {{-- Tombol Ubah & Hapus --}}

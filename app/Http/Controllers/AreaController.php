@@ -65,14 +65,8 @@ class AreaController extends Controller
     {
         try {
             $request->validate([
-                // 'lantai' => 'required',
                 'area' => 'required',
-                // 'pic_area' => 'required',
             ]);
-            // $pic_area = Area::where('pic_area', $request->pic_area)->where('id', '!=', $id)->first();
-            // if ($pic_area) {
-            //     return back()->with(['area_error' => 'PIC area sudah ada di area lain']);
-            // }
             $areas = Area::where('area', $request->area)->where('id', '!=', $id)->first();
             if ($areas) {
                 return back()->with(['area_error' => "Area '$request->area' sudah terdaftar di lantai lain atau lantai yang sama"]);

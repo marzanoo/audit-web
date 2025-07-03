@@ -26,42 +26,69 @@
             <label for="standar_variabel" class="block text-gray-700 font-semibold mb-2">Standar</label>
             <input type="text" name="standar_variabel" id="standar_variabel" value="{{ $variabel->standar_variabel }}" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required placeholder="Masukkan standar">
         </div>  
+        
+        @if(count($variabel->standarFotos) > 0)
         <div class="mb-4">
-            <label for="standar_foto" class="block text-gray-700 font-semibold mb-2">Foto</label>
-            <input type="file" accept="image/*" name="standar_foto" id="standar_foto" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="previewImage(event)">
-            
-            <div id="image-preview-container" class="mt-4 {{ $variabel->standar_foto ? '' : 'hidden' }}">
-                <div class="relative w-[120px]">
-                    <img id="image-preview" 
-                         src="{{ $variabel->standar_foto ? asset('storage/' . $variabel->standar_foto) : '#' }}" 
-                         alt="Image Preview" 
+            <label class="block text-gray-700 font-semibold mb-2">Foto Standar yang ada</label>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                @foreach($variabel->standarFotos as $foto)
+                <div class="relative">
+                    <img src="{{ asset('storage/' . $foto->image_path) }}" 
+                         alt="Foto Standar" 
                          class="w-[120px] h-[120px] object-cover rounded-lg shadow-md">
+                    <div class="mt-2">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" name="delete_photos[]" value="{{ $foto->id }}" class="form-checkbox h-5 w-5 text-red-600">
+                            <span class="text-sm text-red-600">Hapus foto ini</span>
+                        </label>
+                    </div>
                 </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+        
+        <div class="mb-4">
+            <label for="standar_foto" class="block text-gray-700 font-semibold mb-2">Tambah Foto Baru (bisa pilih lebih dari satu)</label>
+            <input type="file" accept="image/*" name="standar_foto[]" id="standar_foto" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" multiple onchange="previewNewImages(event)">
+            
+            <div id="new-image-preview-container" class="mt-4 grid grid-cols-3 gap-4">
+                <!-- Preview images will be displayed here -->
             </div>
         </div>  
+        
         <button type="submit" class="bg-black text-white px-4 py-2 rounded-lg">Simpan Perubahan</button>
     </form>
 </div>
 @push('scripts')   
 <script>
-    function previewImage(event) {
+    function previewNewImages(event) {
         const input = event.target;
-        const preview = document.getElementById('image-preview');
-        const previewContainer = document.getElementById('image-preview-container');
-        const removeButton = document.getElementById('remove-image');
-
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function (e) {  
-                preview.src = e.target.result;
-                previewContainer.classList.remove('hidden');
-                removeButton.classList.remove('hidden'); // Tampilkan tombol hapus hanya jika ada foto baru
-            };
-            reader.readAsDataURL(input.files[0]);
-        } else {
-            preview.src = '#';
-            previewContainer.classList.add('hidden');
-            removeButton.classList.add('hidden');
+        const previewContainer = document.getElementById('new-image-preview-container');
+        
+        // Clear previous previews
+        previewContainer.innerHTML = '';
+        
+        if (input.files && input.files.length > 0) {
+            for (let i = 0; i < input.files.length; i++) {
+                const reader = new FileReader();
+                const file = input.files[i];
+                
+                reader.onload = function(e) {
+                    const previewDiv = document.createElement('div');
+                    previewDiv.className = 'relative';
+                    
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'w-[120px] h-[120px] object-cover rounded-lg shadow-md';
+                    img.alt = 'New Image Preview ' + (i + 1);
+                    
+                    previewDiv.appendChild(img);
+                    previewContainer.appendChild(previewDiv);
+                }
+                
+                reader.readAsDataURL(file);
+            }
         }
     }
 </script>

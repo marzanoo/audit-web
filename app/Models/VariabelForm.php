@@ -28,7 +28,7 @@ class VariabelForm extends Model
         return $this->hasMany(DetailAuditAnswer::class, 'variabel_form_id', 'id');
     }
 
-    public function detailFotoStandarVariabels()
+    public function standarFotos()
     {
         return $this->hasMany(DetailFotoStandarVariabel::class, 'variabel_form_id', 'id');
     }

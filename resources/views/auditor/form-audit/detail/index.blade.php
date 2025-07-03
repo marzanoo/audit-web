@@ -36,10 +36,18 @@
                                 <strong>Standar:</strong> {{ $detail['standar_variabel'] }}
                             </p>
                             <div class="text-lg w-2/3">
-                                @if ($detail['standar_foto'])
-                                    <img src="{{ asset('storage/' . $detail['standar_foto']) }}" loading="eager" alt="Foto Variabel" class="w-32 h-32 object-cover">
+                                <label class="block text-md font-medium text-gray-700 mb-2">Foto Standar Variabel</label>
+                                @if (!empty($detail['standar_foto_list']) && count($detail['standar_foto_list']) > 0)
+                                    <div class="grid grid-cols-3 gap-4">
+                                        @foreach ($detail['standar_foto_list'] as $foto)
+                                            <img src="{{ $foto['photo_url'] }}" 
+                                                loading="eager" 
+                                                alt="Foto Standar Variabel" 
+                                                class="w-32 h-32 object-cover rounded-lg shadow-md">
+                                        @endforeach
+                                    </div>
                                 @else
-                                    Tidak ada foto
+                                    <p class="text-gray-600">Tidak ada foto standar variabel</p>
                                 @endif
                             </div>
                             <p class="text-gray-600 mb-2">

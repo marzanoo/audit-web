@@ -45,7 +45,10 @@
                         @if ($detail['standar_foto'])
                             <div class="mt-3 mb-4">
                                 <h5 class="text-md font-medium text-gray-700 mb-2">Foto Standar:</h5>
-                                <img src="{{ asset('storage/' . $detail['standar_foto']) }}" alt="Foto Standar" class="w-40 h-40 object-cover rounded-lg shadow-sm">
+                                <img src="{{ asset('storage/' . $detail['standar_foto']) }}" 
+                                     alt="Foto Standar" 
+                                     class="w-40 h-40 object-cover rounded-lg shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
+                                     onclick="openModal('{{ asset('storage/' . $detail['standar_foto']) }}', 'Foto Standar')">
                             </div>
                         @endif
                         <p class="text-gray-600 mb-2">
@@ -58,9 +61,15 @@
                         <div class="mt-6 mb-4">
                             <h5 class="text-md font-medium text-gray-700 mb-2">Foto Temuan:</h5>
                             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                @foreach ($detail['images'] as $image)
+                                @foreach ($detail['images'] as $index => $image)
                                     <div class="relative">
-                                        <img src="{{ asset('storage/' . $image['image_path']) }}" alt="Foto Temuan" class="w-full h-32 object-cover rounded-lg shadow-sm">
+                                        <img src="{{ asset('storage/' . $image['image_path']) }}" 
+                                             alt="Foto Temuan {{ $index + 1 }}" 
+                                             class="w-full h-32 object-cover rounded-lg shadow-sm cursor-pointer hover:opacity-80 transition-opacity hover:scale-105 transform"
+                                             onclick="openModal('{{ asset('storage/' . $image['image_path']) }}', 'Foto Temuan {{ $index + 1 }}')">
+                                        <div class="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                                            {{ $index + 1 }}
+                                        </div>
                                     </div>
                                 @endforeach
                             </div>
@@ -250,7 +259,11 @@
                         <div class="text-center">
                             <h4 class="font-medium mb-3">Tanda Tangan Auditor</h4>
                             @if ($signatures->auditor_signature)
-                                <img src="{{ asset('storage/' . $signatures->auditor_signature) }}" alt="Tanda Tangan Auditor" class="border-2 border-gray-300 rounded-lg mx-auto" width="300">
+                                <img src="{{ asset('storage/' . $signatures->auditor_signature) }}" 
+                                     alt="Tanda Tangan Auditor" 
+                                     class="border-2 border-gray-300 rounded-lg mx-auto cursor-pointer hover:opacity-80 transition-opacity" 
+                                     width="300"
+                                     onclick="openModal('{{ asset('storage/' . $signatures->auditor_signature) }}', 'Tanda Tangan Auditor')">
                             @else
                                 <div class="border-2 border-gray-300 rounded-lg mx-auto h-36 flex items-center justify-center text-gray-500">
                                     Tidak ada tanda tangan
@@ -260,7 +273,11 @@
                         <div class="text-center">
                             <h4 class="font-medium mb-3">Tanda Tangan Auditee</h4>
                             @if ($signatures->auditee_signature)
-                                <img src="{{ asset('storage/' . $signatures->auditee_signature) }}" alt="Tanda Tangan Auditee" class="border-2 border-gray-300 rounded-lg mx-auto" width="300">
+                                <img src="{{ asset('storage/' . $signatures->auditee_signature) }}" 
+                                     alt="Tanda Tangan Auditee" 
+                                     class="border-2 border-gray-300 rounded-lg mx-auto cursor-pointer hover:opacity-80 transition-opacity" 
+                                     width="300"
+                                     onclick="openModal('{{ asset('storage/' . $signatures->auditee_signature) }}', 'Tanda Tangan Auditee')">
                             @else
                                 <div class="border-2 border-gray-300 rounded-lg mx-auto h-36 flex items-center justify-center text-gray-500">
                                     Tidak ada tanda tangan
@@ -270,7 +287,11 @@
                         <div class="text-center">
                             <h4 class="font-medium mb-3">Tanda Tangan Fasilitator</h4>
                             @if ($signatures->facilitator_signature)
-                                <img src="{{ asset('storage/' . $signatures->facilitator_signature) }}" alt="Tanda Tangan Fasilitator" class="border-2 border-gray-300 rounded-lg mx-auto" width="300">
+                                <img src="{{ asset('storage/' . $signatures->facilitator_signature) }}" 
+                                     alt="Tanda Tangan Fasilitator" 
+                                     class="border-2 border-gray-300 rounded-lg mx-auto cursor-pointer hover:opacity-80 transition-opacity" 
+                                     width="300"
+                                     onclick="openModal('{{ asset('storage/' . $signatures->facilitator_signature) }}', 'Tanda Tangan Fasilitator')">
                             @else
                                 <div class="border-2 border-gray-300 rounded-lg mx-auto h-36 flex items-center justify-center text-gray-500">
                                     Tidak ada tanda tangan
@@ -283,4 +304,54 @@
         </div>
     </div>
 </div>
+
+<!-- Modal untuk menampilkan gambar full size -->
+<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50" onclick="closeModal()">
+    <div class="relative max-w-screen-lg max-h-screen-lg p-4">
+        <button onclick="closeModal()" class="absolute top-4 right-4 text-white text-4xl font-bold hover:text-gray-300 z-10">
+            ×
+        </button>
+        <img id="modalImage" src="" alt="" class="max-w-full max-h-full object-contain rounded-lg">
+        <div id="modalCaption" class="text-white text-center mt-4 text-lg font-medium"></div>
+    </div>
+</div>
+
+<script>
+function openModal(imageSrc, caption) {
+    const modal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    const modalCaption = document.getElementById('modalCaption');
+    
+    modalImage.src = imageSrc;
+    modalCaption.textContent = caption;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    const modal = document.getElementById('imageModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    
+    // Restore body scroll
+    document.body.style.overflow = 'auto';
+}
+
+// Close modal with ESC key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeModal();
+    }
+});
+
+// Close modal when clicking outside image
+document.getElementById('imageModal').addEventListener('click', function(event) {
+    if (event.target === this) {
+        closeModal();
+    }
+});
+</script>
 @endsection

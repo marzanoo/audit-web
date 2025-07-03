@@ -27,7 +27,7 @@
             {{-- <input type="hidden" name="device_id" id="device_id"> --}}
 
             <div class="mb-4">
-                <input type="n" name="nik" placeholder="NIK" required 
+                <input type="n" name="nik" placeholder="NIK" required autofocus
                     class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-300 appearance-none">
             </div>
 

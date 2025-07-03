@@ -15,12 +15,7 @@ class VariabelFormController extends Controller
      */
     public function index($id)
     {
-        $variabel = VariabelForm::with('temaForm:id,tema', 'detailFotoStandarVariabels')->where('tema_form_id', $id)->get();
-        $variabel->each(function ($item) {
-            $item->foto_standar_urls = $item->detailFotoStandarVariabels->map(function ($photo) {
-                return asset('storage/' . $photo->image_path);
-            });
-        });
+        $variabel = VariabelForm::with('temaForm:id,tema')->where('tema_form_id', $id)->get();
         return response()->json([
             'message' => 'Variabel berhasil diambil',
             'data' => $variabel
@@ -45,55 +40,51 @@ class VariabelFormController extends Controller
             'tema_form_id' => 'required',
             'variabel' => 'required',
             'standar_variabel' => 'required',
-            'standar_foto.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',
+            'standar_foto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',
         ]);
-
-        if (VariabelForm::where('tema_form_id', $request->tema_form_id)
-            ->where('variabel', $request->variabel)
-            ->exists()
-        ) {
+        if (VariabelForm::where('tema_form_id', $request->tema_form_id)->where('variabel', $request->variabel)->exists()) {
             return response()->json([
                 'message' => 'Variabel sudah ada',
             ]);
         }
-
-        // Create the variabel without photos first
-        $variabel = VariabelForm::create([
-            'tema_form_id' => $request->tema_form_id,
-            'variabel' => $request->variabel,
-            'standar_variabel' => $request->standar_variabel,
-            'standar_foto' => null, // This field will eventually be removed or kept for backward compatibility
-        ]);
-
-        $photoUrls = [];
-
-        // Handle multiple photos
+        $path = null;
         if ($request->hasFile('standar_foto')) {
-            $files = $request->file('standar_foto');
+            $path = $request->file('standar_foto')->store('standards', 'public');
 
-            // Handle case where standar_foto is an array or single file
-            if (!is_array($files)) {
-                $files = [$files];
-            }
+            $variabel = VariabelForm::create([
+                'tema_form_id' => $request->tema_form_id,
+                'variabel' => $request->variabel,
+                'standar_variabel' => $request->standar_variabel,
+                'standar_foto' => $path,
+            ]);
 
-            foreach ($files as $file) {
-                $path = $file->store('standards', 'public');
-
-                // Create detail photo record
-                $detailPhoto = DetailFotoStandarVariabel::create([
-                    'variabel_form_id' => $variabel->id,
-                    'image_path' => $path,
-                ]);
-
-                $photoUrls[] = asset('storage/' . $path);
-            }
+            return response()->json([
+                'message' => 'Variabel berhasil ditambahkan',
+                'data' => $variabel,
+                'photo_url' => $path ? asset('storage/' . $path) : null
+            ]);
         }
+    }
+
+    public function getStandarFotoVariabel($id)
+    {
+        $standar_foto = DetailFotoStandarVariabel::where('variabel_form_id', $id)->get();
+
+        // Map data untuk menambahkan URL lengkap untuk setiap foto
+        $standar_foto = $standar_foto->map(function ($foto) {
+            return [
+                'id' => $foto->id,
+                'variable_form_id' => $foto->variabel_form_id,
+                'image_path' => $foto->image_path,
+                'photo_url' => $foto->image_path ? asset('storage/' . $foto->image_path) : null
+            ];
+        });
 
         return response()->json([
-            'message' => 'Variabel berhasil ditambahkan',
-            'data' => $variabel,
-            'photo_urls' => $photoUrls
-        ]);
+            'success' => true,
+            'message' => 'Foto standar variabel berhasil diambil',
+            'data' => $standar_foto
+        ], 200);
     }
 
     /**
@@ -101,22 +92,16 @@ class VariabelFormController extends Controller
      */
     public function show(string $id)
     {
-        $variabel = VariabelForm::with('detailFotoStandarVariabels')->find($id);
-
+        $variabel = VariabelForm::find($id);
         if (!$variabel) {
             return response()->json([
                 'message' => 'Variabel tidak ditemukan',
-            ], 404);
+            ]);
         }
-
-        $photoUrls = $variabel->detailFotoStandarVariabels->map(function ($photo) {
-            return asset('storage/' . $photo->image_path);
-        });
-
         return response()->json([
             'message' => 'Variabel berhasil diambil',
             'data' => $variabel,
-            'photo_urls' => $photoUrls
+            'photo_url' => $variabel->standar_foto ? asset('storage/' . $variabel->standar_foto) : null
         ]);
     }
 
@@ -181,65 +166,36 @@ class VariabelFormController extends Controller
             'tema_form_id' => 'required|integer',
             'variabel' => 'required|string',
             'standar_variabel' => 'required|string',
-            'standar_foto.*' => 'nullable|image|mimes:jpg,jpeg,png',
-            'delete_photos' => 'nullable|array',
-            'delete_photos.*' => 'nullable|integer',
+            'standar_foto' => 'nullable|image|mimes:jpg,jpeg,png', // Pastikan format gambar benar
         ]);
 
         // Cari data berdasarkan ID
         $variabel = VariabelForm::findOrFail($id);
 
-        // Update data dasar
+        // Update data
         $variabel->tema_form_id = $request->tema_form_id;
         $variabel->variabel = $request->variabel;
         $variabel->standar_variabel = $request->standar_variabel;
 
-        // Hapus foto yang diminta untuk dihapus
-        if ($request->has('delete_photos') && is_array($request->delete_photos)) {
-            foreach ($request->delete_photos as $photoId) {
-                $photo = DetailFotoStandarVariabel::find($photoId);
-                if ($photo && $photo->variabel_form_id == $id) {
-                    Storage::disk('public')->delete($photo->image_path);
-                    $photo->delete();
-                }
-            }
-        }
-
-        // Tambah foto baru jika ada
+        // Cek apakah ada file yang diunggah
         if ($request->hasFile('standar_foto')) {
-            $files = $request->file('standar_foto');
-
-            // Handle case where standar_foto is an array or single file
-            if (!is_array($files)) {
-                $files = [$files];
+            // Hapus file lama jika ada
+            if ($variabel->standar_foto) {
+                Storage::disk('public')->delete($variabel->standar_foto);
             }
 
-            foreach ($files as $file) {
-                $path = $file->store('standards', 'public');
-
-                // Create detail photo record
-                DetailFotoStandarVariabel::create([
-                    'variabel_form_id' => $variabel->id,
-                    'image_path' => $path,
-                ]);
-            }
+            // Simpan file baru di 'storage/app/public/standards'
+            $path = $request->file('standar_foto')->store('standards', 'public');
+            $variabel->standar_foto = $path; // Simpan path ke database
         }
 
-        // Simpan perubahan untuk data dasar
+        // Simpan perubahan
         $variabel->save();
-
-        // Get all photos for response
-        $photoUrls = $variabel->detailFotoStandarVariabels()->get()->map(function ($photo) {
-            return [
-                'id' => $photo->id,
-                'url' => asset('storage/' . $photo->image_path)
-            ];
-        });
 
         return response()->json([
             'message' => 'Data berhasil diperbarui!',
             'data' => $variabel,
-            'photo_urls' => $photoUrls
+            'photo_url' => $variabel->standar_foto ? asset('storage/' . $variabel->standar_foto) : null
         ], 200);
     }
 
@@ -249,27 +205,16 @@ class VariabelFormController extends Controller
      */
     public function destroy(string $id)
     {
-        $variabel = VariabelForm::with('detailFotoStandarVariabels')->find($id);
-
+        $variabel = VariabelForm::find($id);
         if (!$variabel) {
             return response()->json([
                 'message' => 'Variabel tidak ditemukan',
             ], 404);
         }
-
-        // Delete all associated photos
-        foreach ($variabel->detailFotoStandarVariabels as $photo) {
-            Storage::disk('public')->delete($photo->image_path);
-            $photo->delete();
-        }
-
-        // Delete the old single photo if it exists (legacy data)
         if ($variabel->standar_foto) {
             Storage::disk('public')->delete($variabel->standar_foto);
         }
-
         $variabel->delete();
-
         return response()->json([
             'message' => 'Variabel berhasil dihapus',
         ]);

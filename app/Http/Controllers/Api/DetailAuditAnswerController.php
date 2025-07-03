@@ -185,13 +185,15 @@ class DetailAuditAnswerController extends Controller
 
     public function getAuditAnswer($auditAnswerId)
     {
+        // Eager-load the standarFotos relationship
         $data = DetailAuditAnswer::with([
             'variabel.temaForm.form',
+            'variabel.standarFotos', // Add standarFotos relationship
             'detailAuditeeAnswer.userAuditee',
             'detailFotoAuditAnswer'
         ])->where('audit_answer_id', $auditAnswerId)->get();
 
-        // Cek apakah ada data yang tidak sesuai dengan audit_answer_id yang diminta
+        // Check if data is empty or contains invalid audit_answer_id
         if ($data->isEmpty() || $data->contains(fn($detail) => $detail->audit_answer_id != $auditAnswerId)) {
             return response()->json([
                 'message' => 'Data audit tidak ditemukan atau audit_answer_id tidak sesuai'
@@ -205,6 +207,14 @@ class DetailAuditAnswerController extends Controller
                 'variabel_form_id' => $detail->variabel_form_id,
                 'variabel' => $detail->variabel->variabel,
                 'standar_variabel' => $detail->variabel->standar_variabel,
+                // Map list of standard photos
+                'list_standar_foto' => $detail->variabel->standarFotos->map(function ($foto) {
+                    return [
+                        'id' => $foto->id,
+                        'image_path' => $foto->image_path
+                    ];
+                }),
+                // Optionally keep standar_foto for backward compatibility
                 'standar_foto' => $detail->variabel->standar_foto,
                 'tema' => $detail->variabel->temaForm->tema,
                 'kategori' => $detail->variabel->temaForm->form->kategori,

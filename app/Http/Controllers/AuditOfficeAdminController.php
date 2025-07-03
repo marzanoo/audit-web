@@ -44,6 +44,23 @@ class AuditOfficeAdminController extends Controller
         return view('admin.audit-office.audit-form', compact('audit_form', 'lantaiId'));
     }
 
+    public function auditApprove($id)
+    {
+        $auditAnswerId = $id;
+        $auditAnswer = AuditAnswer::find($auditAnswerId);
+        if (!$auditAnswer) {
+            return redirect()->back()->with('audit_office_error', 'Form audit tidak ditemukan');
+        }
+
+        if ($auditAnswer->status === 'approved') {
+            return redirect()->back()->with('audit_office_error', 'Form audit sudah disetujui');
+        }
+
+        $auditAnswer->status = 'approved';
+        $auditAnswer->save();
+        return redirect()->back()->with('audit_office_success', 'Form audit berhasil disetujui');
+    }
+
     public function showAuditAnswer($id)
     {
         $auditAnswerId = $id;
@@ -279,8 +296,8 @@ class AuditOfficeAdminController extends Controller
         $auditAnswer = AuditAnswer::where('id', $auditAnswerId)->first();
 
         $grade = $this->getGrade($auditAnswerId);
-
-        return view('admin.audit-office.detail.preview-excel', compact('formattedData', 'auditAnswer', 'grade', 'id'));
+        $chargeFees = $this->calculateAuditChargeFees($auditAnswerId);
+        return view('admin.audit-office.detail.preview-excel', compact('formattedData', 'auditAnswer', 'grade', 'id', 'chargeFees'));
     }
 
     public function downloadExcel($id)
@@ -298,6 +315,10 @@ class AuditOfficeAdminController extends Controller
 
         $formattedData = $this->formatAuditData($data);
         $auditAnswer = AuditAnswer::where('id', $auditAnswerId)->first();
+        $picId = $auditAnswer->pic_area;
+        $empId = PicArea::where('id', $picId)->first()->pic_id;
+        $karyawan = Karyawan::where('emp_id', $empId)->first();
+        $picName = $karyawan ? $karyawan->emp_name : null;
         $grade = $this->getGrade($auditAnswerId);
 
         // Get signatures data
@@ -305,7 +326,8 @@ class AuditOfficeAdminController extends Controller
 
         $fileName = 'Audit_Report_' . $auditAnswer->area_id . '_' . date('Y-m-d') . '.xlsx';
 
-        return Excel::download(new AuditAnswerExport($formattedData, $auditAnswer, $grade, $signatures), $fileName);
+        $chargeFees = $this->calculateAuditChargeFees($auditAnswerId);
+        return Excel::download(new AuditAnswerExport($formattedData, $auditAnswer, $grade, $signatures, $chargeFees, $picName), $fileName);
     }
 
     private function formatAuditData($data)

@@ -35,7 +35,7 @@
             <input type="hidden" name="device_id" id="device_id">
 
             <div class="mb-4">
-                <input type="text" name="username" placeholder="Username" required 
+                <input type="text" name="username" placeholder="Username" required autofocus
                     class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-300">
             </div>
 

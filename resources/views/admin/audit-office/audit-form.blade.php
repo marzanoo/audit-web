@@ -6,6 +6,16 @@
     <a href="{{ route('audit-office-admin') }}" class="text-lg font-semibold flex items-center mb-4 w-fit">
         ← Kembali
     </a>
+    @if (session('audit_office_error'))
+        <div class="bg-red-500 text-white p-4 rounded-lg mb-4">
+            {{ session('audit_office_error') }}
+        </div>
+    @endif
+    @if (session('audit_office_success'))
+        <div class="bg-green-500 text-white p-4 rounded-lg mb-4">
+            {{ session('audit_office_success') }}
+        </div>
+    @endif
     {{-- <a href="{{ route('audit-office-admin-area', $lantaiId) }}" class="text-lg font-semibold flex items-center mb-4 w-fit">
         ← Kembali
     </a> --}}
@@ -45,6 +55,17 @@
                 <a href="{{ route('detail-audit-office-admin-audit-form', $item->id) }}" class="bg-red-900 text-white px-4 py-2 rounded-lg text-center">
                     Lihat
                 </a>
+                <form action="{{ route('approve-audit-office-admin', $item->id) }}" method="POST" onsubmit="return confirm('Apakah anda yakin untuk approve audit?')">
+                    @csrf
+                    @method('PUT')
+                    
+                    <button 
+                        type="submit" 
+                        class="bg-green-500 text-white px-4 py-2 rounded-lg w-full {{ $item->status == 'approved' ? 'opacity-50 cursor-not-allowed' : '' }}"
+                        {{ $item->status == 'approved' ? 'disabled' : '' }}>
+                        Approve
+                    </button>
+                </form>
             </div>
         </div>
         @endforeach

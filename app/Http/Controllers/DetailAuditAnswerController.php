@@ -6,6 +6,7 @@ use App\Models\AuditAnswer;
 use App\Models\DetailAuditAnswer;
 use App\Models\DetailAuditeeAnswer;
 use App\Models\DetailFotoAuditAnswer;
+use App\Models\DetailFotoStandarVariabel;
 use App\Models\DetailSignatureAuditAnswer;
 use App\Models\Karyawan;
 use Illuminate\Http\Request;
@@ -20,23 +21,38 @@ class DetailAuditAnswerController extends Controller
         if (!Auth::check()) {
             return redirect()->route('login')->with('login_error', 'Silakan login terlebih dahulu');
         }
+
         $auditAnswerId = $id;
         $detailAuditAnswer = DetailAuditAnswer::with([
             'variabel.temaForm.form'
         ])->where('audit_answer_id', $auditAnswerId)->get()
             ->map(function ($detail) {
+                // Ambil daftar foto standar variabel dari DetailFotoStandarVariabel
+                $standarFotoList = DetailFotoStandarVariabel::where('variabel_form_id', $detail->variabel_form_id)
+                    ->get()
+                    ->map(function ($foto) {
+                        return [
+                            'id' => $foto->id,
+                            'variable_form_id' => $foto->variabel_form_id,
+                            'image_path' => $foto->image_path,
+                            'photo_url' => $foto->image_path ? asset('storage/' . $foto->image_path) : null
+                        ];
+                    });
+
                 return [
                     'id' => $detail->id,
                     'audit_answer_id' => $detail->audit_answer_id,
                     'variabel_form_id' => $detail->variabel_form_id,
                     'variabel' => $detail->variabel->variabel,
                     'standar_variabel' => $detail->variabel->standar_variabel,
-                    'standar_foto' => $detail->variabel->standar_foto,
+                    'standar_foto' => $detail->variabel->standar_foto, // Biarkan untuk kompatibilitas, jika digunakan
+                    'standar_foto_list' => $standarFotoList, // Tambahkan daftar foto
                     'tema' => $detail->variabel->temaForm->tema,
                     'kategori' => $detail->variabel->temaForm->form->kategori,
                     'score' => $detail->score,
                 ];
             });
+
         return view('auditor.form-audit.detail.index', compact('detailAuditAnswer', 'auditAnswerId'), ['showBottomNav' => false]);
     }
 

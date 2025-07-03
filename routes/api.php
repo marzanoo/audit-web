@@ -87,6 +87,7 @@ Route::middleware('auth:api')->get('/total-variabel', [VariabelFormController::c
 Route::middleware('auth:api')->get('/variabel-form-single/{id}', [VariabelFormController::class, 'show']);
 Route::middleware('auth:api')->put('/variabel-form/{id}', [VariabelFormController::class, 'update']);
 Route::middleware('auth:api')->delete('/variabel-form/{id}', [VariabelFormController::class, 'destroy']);
+Route::middleware('auth:api')->get('/standar-variabel-foto/{id}', [VariabelFormController::class, 'getStandarFotoVariabel']);
 //Audit Answer
 Route::middleware('auth:api')->post('/audit-answer-insert', [AuditAnswerController::class, 'store']);
 Route::middleware('auth:api')->get('/audit-answer-auditor/{id}', [AuditAnswerController::class, 'getTotalAuditByAuditor']);
