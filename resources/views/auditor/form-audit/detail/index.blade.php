@@ -35,21 +35,24 @@
                             <p class="text-gray-600 mb-2">
                                 <strong>Standar:</strong> {{ $detail['standar_variabel'] }}
                             </p>
-                            <div class="text-lg w-2/3">
-                                <label class="block text-md font-medium text-gray-700 mb-2">Foto Standar Variabel</label>
-                                @if (!empty($detail['standar_foto_list']) && count($detail['standar_foto_list']) > 0)
-                                    <div class="grid grid-cols-3 gap-4">
-                                        @foreach ($detail['standar_foto_list'] as $foto)
-                                            <img src="{{ $foto['photo_url'] }}" 
-                                                loading="eager" 
-                                                alt="Foto Standar Variabel" 
-                                                class="w-32 h-32 object-cover rounded-lg shadow-md">
+                            @if (count ($detail['standar_foto_list']) > 0)
+                                <div class="mt-3 mb-4">
+                                    <h5 class="text-md font-medium text-gray-700 mb-2">Foto Standar:</h5>
+                                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                        @foreach($detail['standar_foto_list'] as $index => $standarFoto)
+                                            <div class="relative">
+                                                <img src="{{ asset('storage/' . $standarFoto['image_path']) }}" 
+                                                    alt="Foto Standar {{ $index + 1 }}" 
+                                                    class="w-full h-32 object-cover rounded-lg shadow-sm cursor-pointer hover:opacity-80 transition-opacity hover:scale-105 transform"
+                                                    onclick="openModal('{{ asset('storage/' . $standarFoto['image_path']) }}', 'Foto Standar {{ $index + 1 }}')">
+                                                <div class="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                                                    {{ $index + 1 }}
+                                                </div>
+                                            </div>
                                         @endforeach
-                                    </div>
-                                @else
-                                    <p class="text-gray-600">Tidak ada foto standar variabel</p>
-                                @endif
-                            </div>
+                                    </div>                                
+                                </div>
+                            @endif
                             <p class="text-gray-600 mb-2">
                                 {{ $detail['variabel'] }}
                             </p>
@@ -154,10 +157,194 @@
         </div>
     </div>
 </div>
-@endsection
+<!-- Modal untuk menampilkan gambar full size -->
+<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50" onclick="closeModal()">
+    <div class="relative max-w-screen-lg max-h-screen-lg p-4">
+        <button onclick="closeModal()" class="absolute top-4 right-4 text-black text-4xl font-bold hover:text-gray-300 z-10">
+            ×
+        </button>
+        <img id="modalImage" src="" alt="" class="max-w-full max-h-full object-contain rounded-lg">
+        <div id="modalCaption" class="text-white text-center mt-4 text-lg font-medium"></div>
+    </div>
+</div>
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 <script>
+    function saveFormData(detailId) {
+        const dataList = document.getElementById(`data-list-${detailId}`);
+        const tertuduhItems = dataList.querySelectorAll('div[data-entry-id]');
+        const tertuduhData = [];
+
+        const tertuduhInputs = document.querySelectorAll(`input[name="tertuduh_${detailId}[]"]`);
+        const temuanInputs = document.querySelectorAll(`input[name="temuan_${detailId}[]"]`);
+
+        tertuduhItems.forEach((item, index) => {
+            const entryId = item.dataset.entryId;
+            const tertuduh = tertuduhInputs[index]?.value || '';
+            const temuan = temuanInputs[index]?.value || '';
+            tertuduhData.push({ entryId, tertuduh, temuan });
+        });
+
+        const images = [];
+        const imagePreviews = document.getElementById(`image-preview-container-${detailId}`).querySelectorAll('img');
+        imagePreviews.forEach((img, index) => {
+            images.push({ src: img.src, fileId: img.parentElement.dataset.fileId });
+        });
+
+        const formData = {
+            tertuduhData,
+            images,
+            score: document.getElementById(`inputScore-${detailId}`).value
+        };
+
+        localStorage.setItem(`auditForm_${detailId}`, JSON.stringify(formData));
+    }
+
+    function restoreFormData(detailId) {
+        const savedData = localStorage.getItem(`auditForm_${detailId}`);
+        if (!savedData) return;
+
+        const formData = JSON.parse(savedData);
+        const dataList = document.getElementById(`data-list-${detailId}`);
+        const previewContainer = document.getElementById(`image-preview-container-${detailId}`);
+
+        // Pulihkan data tertuduh dan temuan
+        formData.tertuduhData.forEach(data => {
+            const dataItem = document.createElement('div');
+            dataItem.className = 'flex justify-between items-center bg-gray-100 p-2 rounded-lg shadow-sm';
+            dataItem.dataset.entryId = data.entryId;
+
+            const temuanValue = data.temuan !== '' ? parseInt(data.temuan, 10) : 0;
+            dataItem.innerHTML = `
+                <span class="text-gray-700">${data.tertuduh || '(Tanpa Nama)'} - Temuan: ${temuanValue}</span>
+                <button type="button" onclick="hapusTertuduh(this, ${temuanValue}, '${detailId}', '${data.entryId}')" class="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-700">Hapus</button>
+            `;
+
+            const form = document.getElementById('auditForm');
+            const newTertuduhInput = document.createElement('input');
+            newTertuduhInput.type = 'hidden';
+            newTertuduhInput.name = `tertuduh_${detailId}[]`;
+            newTertuduhInput.value = data.tertuduh;
+            newTertuduhInput.dataset.entryId = data.entryId;
+            form.appendChild(newTertuduhInput);
+
+            const newTemuanInput = document.createElement('input');
+            newTemuanInput.type = 'hidden';
+            newTemuanInput.name = `temuan_${detailId}[]`;
+            newTemuanInput.value = data.temuan;
+            newTemuanInput.dataset.entryId = data.entryId;
+            form.appendChild(newTemuanInput);
+
+            dataList.appendChild(dataItem);
+        });
+
+        // Pulihkan preview gambar dengan pemberitahuan konfirmasi
+        if (formData.images.length > 0) {
+            const confirmContainer = document.createElement('div');
+            confirmContainer.className = 'flex justify-between items-center bg-yellow-100 p-3 rounded-lg mb-4';
+            confirmContainer.innerHTML = `
+                <span class="text-yellow-700 text-sm">Gambar dipulihkan dari sesi sebelumnya. Konfirmasi untuk menggunakan atau ambil ulang.</span>
+                <button type="button" onclick="confirmImages('${detailId}')" class="bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600">Gunakan Gambar</button>
+            `;
+            previewContainer.parentNode.insertBefore(confirmContainer, previewContainer);
+
+            formData.images.forEach((image, index) => {
+                const imageWrapper = document.createElement('div');
+                imageWrapper.className = 'relative';
+                imageWrapper.dataset.fileId = image.fileId;
+
+                const img = document.createElement('img');
+                img.src = image.src;
+                img.className = 'w-32 h-32 object-cover rounded-lg shadow-md cursor-pointer hover:opacity-80 transition-opacity hover:scale-105';
+                img.onclick = function() {
+                    openModal(image.src, `Foto Temuan ${index + 1}`);
+                };
+
+                const deleteButton = document.createElement('button');
+                deleteButton.innerHTML = '×';
+                deleteButton.className = 'absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600';
+                deleteButton.type = 'button';
+                deleteButton.onclick = function() {
+                    previewContainer.removeChild(imageWrapper);
+                    saveFormData(detailId);
+                };
+
+                imageWrapper.appendChild(img);
+                imageWrapper.appendChild(deleteButton);
+                previewContainer.appendChild(imageWrapper);
+            });
+        }
+
+        // Pulihkan score
+        totalScore[detailId] = parseInt(formData.score, 10) || 0;
+        document.getElementById(`inputScore-${detailId}`).value = totalScore[detailId];
+    }
+
+    function confirmImages(detailId) {
+        const savedData = localStorage.getItem(`auditForm_${detailId}`);
+        if (!savedData) return;
+
+        const formData = JSON.parse(savedData);
+        const previewContainer = document.getElementById(`image-preview-container-${detailId}`);
+        const form = document.getElementById('auditForm');
+
+        formData.images.forEach(image => {
+            fetch(image.src)
+                .then(res => res.blob())
+                .then(blob => {
+                    const file = new File([blob], `image_${image.fileId}.png`, { type: 'image/png' });
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'file';
+                    hiddenInput.name = `image_path_${detailId}[]`;
+                    hiddenInput.className = 'hidden';
+                    hiddenInput.dataset.fileId = image.fileId;
+
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    hiddenInput.files = dataTransfer.files;
+
+                    const imageWrapper = previewContainer.querySelector(`[data-file-id="${image.fileId}"]`);
+                    imageWrapper.appendChild(hiddenInput);
+
+                    const confirmContainer = previewContainer.parentNode.querySelector('.flex.justify-between.items-center');
+                    if (confirmContainer) confirmContainer.remove();
+                });
+        });
+    }
+
+    function openModal(imageSrc, caption) {
+        const modal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+        const modalCaption = document.getElementById('modalCaption');
+        
+        modalImage.src = imageSrc;
+        modalCaption.textContent = caption;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('imageModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        
+        document.body.style.overflow = 'auto';
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeModal();
+        }
+    });
+
+    document.getElementById('imageModal').addEventListener('click', function(event) {
+        if (event.target === this) {
+            closeModal();
+        }
+    });
+
     document.addEventListener('DOMContentLoaded', function() {
         const signatureContainers = {
             'auditor': document.getElementById('auditorSignatureCanvas'),
@@ -173,7 +360,6 @@
 
         const submitButton = document.querySelector('button[type="submit"]');
 
-        // Signature modal HTML
         const signatureModalHTML = `
             <div id="signatureModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
                 <div class="bg-white rounded-lg p-6 w-11/12 max-w-md">
@@ -194,7 +380,6 @@
         let signaturePad = null;
 
         function initSignaturePad(canvas) {
-            // Use signature_pad library for better signature capturing
             return new SignaturePad(canvas, {
                 minWidth: 1,
                 maxWidth: 3,
@@ -231,16 +416,12 @@
                     .then(res => res.blob())
                     .then(blob => {
                         const file = new File([blob], `${currentSignatureType}_signature.png`, { type: 'image/png' });
-                        
-                        // Pilih input file sesuai tipe signature
                         const fileInput = document.getElementById(`${currentSignatureType}SignatureInput`);
                         
-                        // Buat DataTransfer untuk set file
                         const dataTransfer = new DataTransfer();
                         dataTransfer.items.add(file);
                         fileInput.files = dataTransfer.files;
                         
-                        // Lanjutkan proses sebelumnya...
                         const targetCanvas = signatureContainers[currentSignatureType];
                         const ctx = targetCanvas.getContext('2d');
                         
@@ -250,6 +431,8 @@
                             ctx.drawImage(img, 0, 0, targetCanvas.width, targetCanvas.height);
                             targetCanvas.setAttribute('data-signed', 'true');
                             checkAllSignatures();
+                            
+                            localStorage.setItem(`signature_${currentSignatureType}`, signatureImage);
                         };
                         img.src = signatureImage;
                         
@@ -265,10 +448,25 @@
             submitButton.disabled = !allSigned;
         }
 
-        // Initial disable of submit button
+        function restoreSignatures() {
+            Object.keys(signatureContainers).forEach(type => {
+                const savedSignature = localStorage.getItem(`signature_${type}`);
+                if (savedSignature) {
+                    const canvas = signatureContainers[type];
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+                    img.onload = function() {
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        canvas.setAttribute('data-signed', 'true');
+                        checkAllSignatures();
+                    };
+                    img.src = savedSignature;
+                }
+            });
+        }
+
         submitButton.disabled = true;
 
-        // Add click events to signature containers and clear buttons
         Object.keys(signatureContainers).forEach(type => {
             signatureContainers[type].addEventListener('click', () => openSignatureModal(type));
             clearButtons[type].addEventListener('click', () => {
@@ -276,17 +474,56 @@
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 canvas.removeAttribute('data-signed');
+                localStorage.removeItem(`signature_${type}`);
                 checkAllSignatures();
+            });
+        });
+
+        // Pulihkan data untuk setiap detailId
+        document.querySelectorAll('[data-detail-id]').forEach(section => {
+            const detailId = section.getAttribute('data-detail-id');
+            totalScore[detailId] = 0; // Inisialisasi totalScore
+            restoreFormData(detailId);
+        });
+
+        restoreSignatures();
+
+        document.querySelectorAll('[id^="tertuduh-"], [id^="temuan-"]').forEach(input => {
+            input.addEventListener('input', () => {
+                const detailId = input.id.split('-')[1];
+                saveFormData(detailId);
             });
         });
     });
 
-    // Inisialisasi totalScore untuk setiap kategori
     let totalScore = {};
-    document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll("[data-detail-id]").forEach(section => {
-            const detailId = section.getAttribute("data-detail-id");
-            totalScore[detailId] = 0; // Set nilai awal 0 untuk setiap kategori
+
+    document.getElementById('auditForm').addEventListener('submit', function(event) {
+        let hasUnconfirmedImages = false;
+        document.querySelectorAll('[data-detail-id]').forEach(section => {
+            const detailId = section.getAttribute('data-detail-id');
+            const previewContainer = document.getElementById(`image-preview-container-${detailId}`);
+            const confirmContainer = previewContainer.parentNode.querySelector('.flex.justify-between.items-center');
+
+            if (confirmContainer) {
+                hasUnconfirmedImages = true;
+            }
+        });
+
+        if (hasUnconfirmedImages) {
+            event.preventDefault();
+            alert('Harap konfirmasi semua gambar yang dipulihkan atau ambil ulang foto.');
+            return;
+        }
+
+        // Hapus data dari localStorage setelah submit
+        document.querySelectorAll('[data-detail-id]').forEach(section => {
+            const detailId = section.getAttribute('data-detail-id');
+            localStorage.removeItem(`auditForm_${detailId}`);
+        });
+
+        Object.keys(signatureContainers).forEach(type => {
+            localStorage.removeItem(`signature_${type}`);
         });
     });
 
@@ -295,25 +532,19 @@
         const temuanInput = document.getElementById(`temuan-${detailId}`);
         const dataList = document.getElementById(`data-list-${detailId}`);
         const inputScore = document.getElementById(`inputScore-${detailId}`);
-
+        
         const tertuduh = tertuduhInput.value.trim();
         const temuan = temuanInput.value.trim();
-
-        // Jika kedua input kosong, tampilkan alert
+        
         if (tertuduh === "" && temuan === "") {
             alert("Minimal satu input harus diisi!");
             return;
         }
-
-        const temuanValue = temuan !== "" ? parseInt(temuan, 10) : 0; // Jika temuan kosong, anggap 0
-
-        // Buat unique ID untuk entri ini
-        const entryId = Date.now().toString();
-
-        // Buat input hidden baru untuk setiap entri
-        const form = document.getElementById('auditForm');
         
-        // Buat input hidden baru untuk tertuduh
+        const temuanValue = temuan !== "" ? parseInt(temuan, 10) : 0;
+        const entryId = Date.now().toString();
+        
+        const form = document.getElementById('auditForm');
         const newTertuduhInput = document.createElement('input');
         newTertuduhInput.type = 'hidden';
         newTertuduhInput.name = `tertuduh_${detailId}[]`;
@@ -321,110 +552,105 @@
         newTertuduhInput.dataset.entryId = entryId;
         form.appendChild(newTertuduhInput);
         
-        // Buat input hidden baru untuk temuan
         const newTemuanInput = document.createElement('input');
         newTemuanInput.type = 'hidden';
         newTemuanInput.name = `temuan_${detailId}[]`;
         newTemuanInput.value = temuan;
         newTemuanInput.dataset.entryId = entryId;
         form.appendChild(newTemuanInput);
-
-        // Buat elemen baru untuk daftar
-        const dataItem = document.createElement("div");
-        dataItem.classList.add("flex", "justify-between", "items-center", "bg-gray-100", "p-2", "rounded-lg", "shadow-sm");
+        
+        const dataItem = document.createElement('div');
+        dataItem.classList.add('flex', 'justify-between', 'items-center', 'bg-gray-100', 'p-2', 'rounded-lg', 'shadow-sm');
         dataItem.dataset.entryId = entryId;
-
+        
         dataItem.innerHTML = `
-            <span class="text-gray-700">${tertuduh || "(Tanpa Nama)"} - Temuan: ${temuanValue}</span>
+            <span class="text-gray-700">${tertuduh || '(Tanpa Nama)'} - Temuan: ${temuanValue}</span>
             <button type="button" onclick="hapusTertuduh(this, ${temuanValue}, '${detailId}', '${entryId}')" class="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-700">Hapus</button>
         `;
-
+        
         dataList.appendChild(dataItem);
-
-        // Update score hanya jika temuan ada
+        
         if (temuanValue > 0) {
-            totalScore[detailId] += temuanValue;
+            totalScore[detailId] = (totalScore[detailId] || 0) + temuanValue;
             inputScore.value = totalScore[detailId];
         }
-
-        // Reset input setelah ditambahkan
+        
         tertuduhInput.value = "";
         temuanInput.value = "";
+        
+        saveFormData(detailId);
     }
 
     function hapusTertuduh(button, temuanValue, detailId, entryId) {
-        // Hapus elemen dari UI
         button.parentElement.remove();
-
-        // Hapus input hidden terkait
         document.querySelector(`input[name="tertuduh_${detailId}[]"][data-entry-id="${entryId}"]`).remove();
         document.querySelector(`input[name="temuan_${detailId}[]"][data-entry-id="${entryId}"]`).remove();
-
-        // Kurangi score saat menghapus data
-        totalScore[detailId] -= temuanValue;
+        
+        totalScore[detailId] = (totalScore[detailId] || 0) - temuanValue;
         document.getElementById(`inputScore-${detailId}`).value = totalScore[detailId];
+        
+        saveFormData(detailId);
     }
 
     function handleFileSelect(event, detailId) {
         const files = event.target.files;
         const previewContainer = document.getElementById(`image-preview-container-${detailId}`);
-        
-        // Create a separate input for each file to prevent overwriting
+        let imageCounter = previewContainer.querySelectorAll('img').length + 1;
+
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             const reader = new FileReader();
-            
-            // Create a unique ID for this file
             const fileId = Date.now() + '-' + i;
-            
+
             reader.onload = function(e) {
-                // Create container for image preview
                 const imageWrapper = document.createElement('div');
                 imageWrapper.className = 'relative';
-                imageWrapper.dataset.fileId = fileId;
-                
-                // Create the image preview
+
                 const image = document.createElement('img');
                 image.src = e.target.result;
-                image.className = 'w-32 h-32 object-cover rounded-lg shadow-md';
-                
-                // Create delete button
+                image.className = 'w-32 h-32 object-cover rounded-lg shadow-md cursor-pointer hover:opacity-80 transition-opacity hover:scale-105';
+                image.onclick = function() {
+                    openModal(e.target.result, `Foto Temuan ${imageCounter}`);
+                };
+
                 const deleteButton = document.createElement('button');
-                deleteButton.innerHTML = '&times;';
-                deleteButton.className = 'absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center';
+                deleteButton.innerHTML = '×';
+                deleteButton.className = 'absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600';
                 deleteButton.type = 'button';
-                
-                // Create a hidden file input for each image
+
                 const hiddenInput = document.createElement('input');
                 hiddenInput.type = 'file';
                 hiddenInput.name = `image_path_${detailId}[]`;
                 hiddenInput.className = 'hidden';
                 hiddenInput.dataset.fileId = fileId;
-                
-                // Create a DataTransfer object to add the file
+
                 const dataTransfer = new DataTransfer();
                 dataTransfer.items.add(file);
                 hiddenInput.files = dataTransfer.files;
-                
-                // Add delete functionality
+
                 deleteButton.onclick = function() {
                     previewContainer.removeChild(imageWrapper);
-                    document.querySelector(`input[data-file-id="${fileId}"]`).remove();
+                    hiddenInput.remove();
+                    imageCounter--;
+                    saveFormData(detailId);
                 };
-                
-                // Add elements to the container
+
                 imageWrapper.appendChild(image);
                 imageWrapper.appendChild(deleteButton);
                 imageWrapper.appendChild(hiddenInput);
-                
                 previewContainer.appendChild(imageWrapper);
+                imageCounter++;
+
+                saveFormData(detailId);
             };
-            
+
             reader.readAsDataURL(file);
         }
-        
-        // Clear the original file input to prevent duplication
+
         event.target.value = "";
     }
 </script>
 @endpush
+@endsection
+
+{{-- Masih ada masalah dibagian submit (gambar tidak tersimpan) --}}

@@ -42,13 +42,22 @@
                         <p class="text-gray-600 mb-2">
                             <strong>Standar:</strong> {{ $detail['standar_variabel'] }}
                         </p>
-                        @if ($detail['standar_foto'])
+                        @if (count ($detail['list_standar_foto']) > 0)
                             <div class="mt-3 mb-4">
                                 <h5 class="text-md font-medium text-gray-700 mb-2">Foto Standar:</h5>
-                                <img src="{{ asset('storage/' . $detail['standar_foto']) }}" 
-                                     alt="Foto Standar" 
-                                     class="w-40 h-40 object-cover rounded-lg shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
-                                     onclick="openModal('{{ asset('storage/' . $detail['standar_foto']) }}', 'Foto Standar')">
+                                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                    @foreach($detail['list_standar_foto'] as $index => $standarFoto)
+                                        <div class="relative">
+                                            <img src="{{ asset('storage/' . $standarFoto['image_path']) }}" 
+                                                 alt="Foto Standar {{ $index + 1 }}" 
+                                                 class="w-full h-32 object-cover rounded-lg shadow-sm cursor-pointer hover:opacity-80 transition-opacity hover:scale-105 transform"
+                                                 onclick="openModal('{{ asset('storage/' . $standarFoto['image_path']) }}', 'Foto Standar {{ $index + 1 }}')">
+                                            <div class="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                                                {{ $index + 1 }}
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>                                
                             </div>
                         @endif
                         <p class="text-gray-600 mb-2">

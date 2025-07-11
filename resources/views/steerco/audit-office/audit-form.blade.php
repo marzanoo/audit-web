@@ -3,9 +3,19 @@
 
 @section('content')
 <div class="container mx-auto p-4">
-    <a href="{{ route('audit-office-steerco-area', $lantaiId) }}" class="text-lg font-semibold flex items-center mb-4 w-fit">
+    <a href="{{ route('audit-office-steerco') }}" class="text-lg font-semibold flex items-center mb-4 w-fit">
         ← Kembali
     </a>
+    @if (session('audit_office_error'))
+        <div class="bg-red-500 text-white p-4 rounded-lg mb-4">
+            {{ session('audit_office_error') }}
+        </div>
+    @endif
+    @if (session('audit_office_success'))
+        <div class="bg-green-500 text-white p-4 rounded-lg mb-4">
+            {{ session('audit_office_success') }}
+        </div>
+    @endif
     <h1 class="text-xl font-bold mb-4">Audit Office - Pilih Form</h1>
     <div class="mt-4 space-y-4">
         @foreach ($audit_form as $item)

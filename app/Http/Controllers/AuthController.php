@@ -41,8 +41,16 @@ class AuthController extends Controller
         }
 
         $browserDeviceId = $request->device_id;
+        $existingUserWithDevice = User::where('device_id', $browserDeviceId)->first();
 
         if (!$user->device_id) {
+            if ($existingUserWithDevice && $existingUserWithDevice->id !== $user->id) {
+                Auth::logout();
+                return back()->with(['login_error' => 'Perangkat ini sudah digunakan oleh akun lain. Satu akun hanya bisa digunakan di satu perangkat.']);
+            }
+            $user->device_id = $browserDeviceId;
+            $user->save();
+        } elseif ($user->device_id !== $browserDeviceId && $user->role == 1) {
             $user->device_id = $browserDeviceId;
             $user->save();
         } elseif ($user->device_id !== $browserDeviceId) {

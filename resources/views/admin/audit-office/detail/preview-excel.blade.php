@@ -50,8 +50,20 @@
                                 <td class="px-4 py-2 border-b border-gray-200 text-sm">{{ $detail['tema'] }}</td>
                                 <td class="px-4 py-2 border-b border-gray-200 text-sm">{{ $detail['standar_variabel'] }}</td>
                                 <td class="px-4 py-2 border-b border-gray-200 text-sm">
-                                    @if ($detail['standar_foto'])
-                                        <img src="{{ asset('storage/' . $detail['standar_foto']) }}" alt="Foto Standar" class="w-20 h-20 object-cover rounded">
+                                    @if (!empty($detail['list_standar_foto']) && count ($detail['list_standar_foto']) > 0)
+                                        <div class="flex flex-col space-y-3">
+                                            @foreach($detail['list_standar_foto'] as $index => $standarFoto)
+                                                <div class="relative">
+                                                    <img src="{{ asset('storage/' . $standarFoto['image_path']) }}" 
+                                                        alt="Foto Standar {{ $index + 1 }}" 
+                                                        class="w-full max-w-xs object-cover rounded cursor-pointer hover:opacity-80 transition-opacity hover:scale-105 transform"
+                                                        onclick="openModal('{{ asset('storage/' . $standarFoto['image_path']) }}', 'Foto Standar {{ $index + 1 }}')">
+                                                    <div class="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                                                        {{ $index + 1 }}
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
                                     @else
                                         <span class="text-gray-400">Tidak ada foto</span>
                                     @endif
@@ -66,11 +78,17 @@
                                     @endforeach
                                 </td>
                                 <td class="px-4 py-2 border-b border-gray-200 text-sm">
-                                    @if (count($detail['images']) > 0)
+                                    @if (!empty($detail['images']) && count($detail['images']) > 0)
                                         <div class="flex flex-col space-y-3">
-                                            @foreach ($detail['images'] as $image)
-                                                <div class="w-full">
-                                                    <img src="{{ asset('storage/' . $image['image_path']) }}" alt="Foto Temuan" class="w-full max-w-xs object-cover rounded">
+                                            @foreach ($detail['images'] as $index => $image)
+                                                <div class="relative">
+                                                    <img src="{{ asset('storage/' . $image['image_path']) }}" 
+                                                    alt="Foto Temuan {{ $index + 1 }}" 
+                                                    class="w-full max-w-xs object-cover rounded cursor-pointer hover:opacity-80 transition-opacity hover:scale-105 transform"
+                                                    onclick="openModal('{{ asset('storage/' . $image['image_path']) }}', 'Foto Temuan {{ $index + 1 }}')">
+                                                    <div class="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                                                        {{ $index + 1 }}
+                                                    </div>
                                                 </div>
                                             @endforeach
                                         </div>
@@ -178,4 +196,54 @@
         </div>
     </div>
 </div>
+<!-- Modal untuk menampilkan gambar full size -->
+<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50" onclick="closeModal()">
+    <div class="relative max-w-screen-lg max-h-screen-lg p-4">
+        <button onclick="closeModal()" class="absolute top-4 right-4 text-white text-4xl font-bold hover:text-gray-300 z-10">
+            ×
+        </button>
+        <img id="modalImage" src="" alt="" class="max-w-full max-h-full object-contain rounded-lg">
+        <div id="modalCaption" class="text-white text-center mt-4 text-lg font-medium"></div>
+    </div>
+</div>
+@push('scripts')
+<script>
+    function openModal(imageSrc, caption) {
+        const modal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+        const modalCaption = document.getElementById('modalCaption');
+        
+        modalImage.src = imageSrc;
+        modalCaption.textContent = caption;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        // Prevent body scroll when modal is open
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('imageModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        
+        // Restore body scroll
+        document.body.style.overflow = 'auto';
+    }
+
+    // Close modal with ESC key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeModal();
+        }
+    });
+
+    // Close modal when clicking outside image
+    document.getElementById('imageModal').addEventListener('click', function(event) {
+        if (event.target === this) {
+            closeModal();
+        }
+    });
+</script>
+@endpush
 @endsection

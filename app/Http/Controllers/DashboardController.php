@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Area;
 use App\Models\AuditAnswer;
 use App\Models\Lantai;
+use App\Models\User;
+use App\Models\VariabelForm;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -38,7 +40,9 @@ class DashboardController extends Controller
     {
         $total_area = Area::count();
         $total_lantai = Lantai::count();
-        return view('admin.konfigurasi.index', compact('total_lantai', 'total_area'));
+        $total_user = User::count();
+        $total_variable = VariabelForm::count();
+        return view('admin.konfigurasi.index', compact('total_lantai', 'total_area', 'total_user', 'total_variable'));
     }
 
     public function totalAuditByAuditor()

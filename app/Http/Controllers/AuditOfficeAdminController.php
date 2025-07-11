@@ -66,6 +66,7 @@ class AuditOfficeAdminController extends Controller
         $auditAnswerId = $id;
         $data = DetailAuditAnswer::with([
             'variabel.temaForm.form',
+            'variabel.standarFotos',
             'detailAuditeeAnswer.userAuditee',
             'detailFotoAuditAnswer'
         ])->where('audit_answer_id', $auditAnswerId)->get();
@@ -81,6 +82,12 @@ class AuditOfficeAdminController extends Controller
                 'variabel_form_id' => $detail->variabel_form_id,
                 'variabel' => $detail->variabel->variabel,
                 'standar_variabel' => $detail->variabel->standar_variabel,
+                'list_standar_foto' => $detail->variabel->standarFotos->map(function ($foto) {
+                    return [
+                        'id' => $foto->id,
+                        'image_path' => $foto->image_path
+                    ];
+                }),
                 'standar_foto' => $detail->variabel->standar_foto,
                 'tema' => $detail->variabel->temaForm->tema,
                 'kategori' => $detail->variabel->temaForm->form->kategori,
@@ -305,6 +312,7 @@ class AuditOfficeAdminController extends Controller
         $auditAnswerId = $id;
         $data = DetailAuditAnswer::with([
             'variabel.temaForm.form',
+            'variabel.standarFotos',
             'detailAuditeeAnswer.userAuditee',
             'detailFotoAuditAnswer'
         ])->where('audit_answer_id', $auditAnswerId)->get();
@@ -340,6 +348,12 @@ class AuditOfficeAdminController extends Controller
                 'variabel' => $detail->variabel->variabel,
                 'standar_variabel' => $detail->variabel->standar_variabel,
                 'standar_foto' => $detail->variabel->standar_foto,
+                'list_standar_foto' => $detail->variabel->standarFotos->map(function ($foto) {
+                    return [
+                        'id' => $foto->id,
+                        'image_path' => $foto->image_path
+                    ];
+                }),
                 'tema' => $detail->variabel->temaForm->tema,
                 'kategori' => $detail->variabel->temaForm->form->kategori,
                 'score' => $detail->score,

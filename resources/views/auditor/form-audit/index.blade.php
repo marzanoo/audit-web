@@ -44,7 +44,7 @@
             <select name="pic_area" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none" required>
                 <option value="" hidden selected disabled>Pilih PIC Area</option>
                 @foreach ($picArea as $item)
-                <option value="{{ $item->id }}">{{ $item->karyawan->emp_name }} - {{ $item->karyawan->dept }}</option>
+                <option value="{{ $item->id }}">{{ $item->karyawan->emp_name }} - {{ $item->karyawan->dept}}</option>
                 @endforeach
             </select>
             <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">

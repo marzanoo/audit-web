@@ -14,12 +14,6 @@
                 <span class="text-lg font-semibold w-1/3">Area</span>
                 <span class="text-lg w-2/3">{{ $item->area }}</span>
             </div>
-        
-            {{-- Data PIC Area --}}
-            <div class="flex justify-between">
-                <span class="text-lg font-semibold w-1/3">PIC Area</span>
-                <span class="text-lg w-2/3">{{ $item->karyawans->emp_name }}</span>
-            </div>
 
             {{-- Lihat--}}
             <div class="flex gap-2 mt-3 justify-end">
