@@ -1,0 +1,249 @@
+@extends('layouts.admin')
+@section('title', 'Preview Excel - Audit App')
+
+@section('content')
+<div class="container mx-auto p-4">
+    <div class="flex justify-between items-center mb-4">
+        <a href="{{ route('detail-audit-office-admin-audit-form', $id) }}" class="text-lg font-semibold flex items-center w-fit">
+            ← Kembali
+        </a>
+        <div class="flex space-x-3">
+            <a href="{{ route('audit-office-admin-download-excel', $id) }}" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download Excel
+            </a>
+            {{-- <a href="{{ route('audit-office-admin-download-pdf', $id) }}" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download PDF
+            </a> --}}
+        </div>
+    </div>
+    
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <div class="bg-gray-100 px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-800">Preview Ekspor Excel</h2>
+        </div>
+        
+        <div class="p-6">
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white border border-gray-200">
+                    <thead>
+                        <tr>
+                            <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Kategori</th>
+                            <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tema</th>
+                            <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Standar</th>
+                            <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Foto Standar</th>
+                            <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Variabel</th>
+                            <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Score</th>
+                            <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Temuan</th>
+                            <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Foto Temuan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($formattedData as $detail)
+                            <tr>
+                                <td class="px-4 py-2 border-b border-gray-200 text-sm">{{ $detail['kategori'] }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200 text-sm">{{ $detail['tema'] }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200 text-sm">{{ $detail['standar_variabel'] }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200 text-sm">
+                                    @if (!empty($detail['list_standar_foto']) && count ($detail['list_standar_foto']) > 0)
+                                        <div class="flex flex-col space-y-3">
+                                            @foreach($detail['list_standar_foto'] as $index => $standarFoto)
+                                                <div class="relative">
+                                                    <img src="{{ asset('storage/' . $standarFoto['image_path']) }}" 
+                                                        alt="Foto Standar {{ $index + 1 }}" 
+                                                        class="w-full max-w-xs object-cover rounded cursor-pointer hover:opacity-80 transition-opacity hover:scale-105 transform"
+                                                        onclick="openModal('{{ asset('storage/' . $standarFoto['image_path']) }}', 'Foto Standar {{ $index + 1 }}')">
+                                                    <div class="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                                                        {{ $index + 1 }}
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="text-gray-400">Tidak ada foto</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-2 border-b border-gray-200 text-sm">{{ $detail['variabel'] }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200 text-sm">{{ $detail['score'] }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200 text-sm">
+                                    @foreach ($detail['auditees'] as $auditee)
+                                        <div class="mb-1">
+                                            <strong>{{ $auditee['auditee'] }}:</strong> {{ $auditee['temuan'] }}
+                                        </div>
+                                    @endforeach
+                                </td>
+                                <td class="px-4 py-2 border-b border-gray-200 text-sm">
+                                    @if (!empty($detail['images']) && count($detail['images']) > 0)
+                                        <div class="flex flex-col space-y-3">
+                                            @foreach ($detail['images'] as $index => $image)
+                                                <div class="relative">
+                                                    <img src="{{ asset('storage/' . $image['image_path']) }}" 
+                                                    alt="Foto Temuan {{ $index + 1 }}" 
+                                                    class="w-full max-w-xs object-cover rounded cursor-pointer hover:opacity-80 transition-opacity hover:scale-105 transform"
+                                                    onclick="openModal('{{ asset('storage/' . $image['image_path']) }}', 'Foto Temuan {{ $index + 1 }}')">
+                                                    <div class="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                                                        {{ $index + 1 }}
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="text-gray-400">Tidak ada foto</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                        <tr class="bg-gray-50">
+                            <td class="px-4 py-2 border-b border-gray-200 text-sm" colspan="4"></td>
+                            <td class="px-4 py-2 border-b border-gray-200 text-sm font-bold">Total Score</td>
+                            <td class="px-4 py-2 border-b border-gray-200 text-sm font-bold">{{ $auditAnswer->total_score }}</td>
+                            <td class="px-4 py-2 border-b border-gray-200 text-sm" colspan="2"></td>
+                        </tr>
+                        <tr class="bg-gray-50">
+                            <td class="px-4 py-2 border-b border-gray-200 text-sm" colspan="4"></td>
+                            <td class="px-4 py-2 border-b border-gray-200 text-sm font-bold">Grade</td>
+                            <td class="px-4 py-2 border-b border-gray-200 text-sm font-bold">{{ $grade }}</td>
+                            <td class="px-4 py-2 border-b border-gray-200 text-sm" colspan="2"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                @if ($grade != 'Diamond')
+                <div class="mt-8">
+                    <h3 class="text-xl font-semibold mb-4">Charge Fees</h3>
+                    <p>Tarif Denda: Rp {{ number_format($chargeFees['feeRate'], 0, ',', '.') }} per temuan</p>
+                    <p>Total Temuan: {{ $chargeFees['totalFindings'] }} | Total Denda: Rp {{ number_format($chargeFees['totalFee'], 0, ',', '.') }}</p>
+
+                    <h4 class="text-lg font-medium mt-4">Denda Tertuduh:</h4>
+                    <table class="min-w-full bg-white border border-gray-200 mt-2">
+                        <thead>
+                            <tr>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Nama</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Departemen</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Jumlah Temuan</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Denda</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($chargeFees['tertuduhDetails'] as $name => $detail)
+                            <tr>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $name }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $detail['dept'] ?? '-' }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $detail['findings'] }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">Rp {{ number_format($detail['fee'], 0, ',', '.') }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+
+                    <h4 class="text-lg font-medium mt-4">Denda PIC Area (50%):</h4>
+                    <p>PIC: {{ $auditAnswer->pic_name ?? 'Tidak Ada' }} | Total Temuan: {{ $chargeFees['totalFindings'] }} | Denda: Rp {{ number_format($chargeFees['picAreaFee'], 0, ',', '.') }}</p>
+
+                    @if (!empty($chargeFees['managerDetails']))
+                    <h4 class="text-lg font-medium mt-4">Denda Manager (Rp 1.000/temuan):</h4>
+                    <table class="min-w-full bg-white border border-gray-200 mt-2">
+                        <thead>
+                            <tr>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Nama</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Departemen</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Jumlah Temuan</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Denda</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($chargeFees['managerDetails'] as $name => $detail)
+                            <tr>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $name }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $detail['dept'] }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $detail['findings'] }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">Rp {{ number_format($detail['fee'], 0, ',', '.') }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    @endif
+
+                    @if (!empty($chargeFees['gmDetails']))
+                    <h4 class="text-lg font-medium mt-4">Denda General Manager (Rp 2.000/temuan):</h4>
+                    <table class="min-w-full bg-white border border-gray-200 mt-2">
+                        <thead>
+                            <tr>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Nama</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Departemen</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Jumlah Temuan</th>
+                                <th class="px-4 py-2 border-b-2 border-gray-200 bg-gray-100">Denda</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($chargeFees['gmDetails'] as $name => $detail)
+                            <tr>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $name }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $detail['dept'] }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">{{ $detail['findings'] }}</td>
+                                <td class="px-4 py-2 border-b border-gray-200">Rp {{ number_format($detail['fee'], 0, ',', '.') }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    @endif
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal untuk menampilkan gambar full size -->
+<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50" onclick="closeModal()">
+    <div class="relative max-w-screen-lg max-h-screen-lg p-4">
+        <button onclick="closeModal()" class="absolute top-4 right-4 text-white text-4xl font-bold hover:text-gray-300 z-10">
+            ×
+        </button>
+        <img id="modalImage" src="" alt="" class="max-w-full max-h-full object-contain rounded-lg">
+        <div id="modalCaption" class="text-white text-center mt-4 text-lg font-medium"></div>
+    </div>
+</div>
+@push('scripts')
+<script>
+    function openModal(imageSrc, caption) {
+        const modal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+        const modalCaption = document.getElementById('modalCaption');
+        
+        modalImage.src = imageSrc;
+        modalCaption.textContent = caption;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        // Prevent body scroll when modal is open
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('imageModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        
+        // Restore body scroll
+        document.body.style.overflow = 'auto';
+    }
+
+    // Close modal with ESC key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeModal();
+        }
+    });
+
+    // Close modal when clicking outside image
+    document.getElementById('imageModal').addEventListener('click', function(event) {
+        if (event.target === this) {
+            closeModal();
+        }
+    });
+</script>
+@endpush
+@endsection
