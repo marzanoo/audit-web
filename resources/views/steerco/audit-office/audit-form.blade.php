@@ -37,6 +37,17 @@
                 <a href="{{ route('detail-audit-office-steerco-audit-form', $item->id) }}" class="bg-red-900 text-white px-4 py-2 rounded-lg text-center">
                     Lihat
                 </a>
+                <form action="{{ route('approve-audit-office-steerco', $item->id) }}" method="POST" onsubmit="return confirm('Apakah anda yakin untuk approve audit?')">
+                    @csrf
+                    @method('PUT')
+                    
+                    <button 
+                        type="submit" 
+                        class="bg-green-500 text-white px-4 py-2 rounded-lg w-full {{ $item->status == 'approved' ? 'opacity-50 cursor-not-allowed' : '' }}"
+                        {{ $item->status == 'approved' ? 'disabled' : '' }}>
+                        Approve
+                    </button>
+                </form>
             </div>
         </div>
         @endforeach

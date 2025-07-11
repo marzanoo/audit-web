@@ -68,6 +68,7 @@ class Kernel extends HttpKernel
     protected $routeMiddleware = [
         'jwt.auth' => \App\Http\Middleware\JWTMiddleware::class,
         'auth-api' => \App\Http\Middleware\JWTMiddleware::class,
-        'verifying' => \App\Http\Middleware\EnsureUserIsVerifying::class
+        'verifying' => \App\Http\Middleware\EnsureUserIsVerifying::class,
+        'role' => \App\Http\Middleware\RestrictToRole::class
     ];
 }

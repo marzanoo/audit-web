@@ -291,6 +291,7 @@ class AuditOfficeAdminController extends Controller
         $auditAnswerId = $id;
         $data = DetailAuditAnswer::with([
             'variabel.temaForm.form',
+            'variabel.standarFotos',
             'detailAuditeeAnswer.userAuditee',
             'detailFotoAuditAnswer'
         ])->where('audit_answer_id', $auditAnswerId)->get();

@@ -26,7 +26,7 @@
         <a href="{{ route('form') }}" class="block bg-gray-100 p-4 rounded-lg shadow-md flex justify-between items-center hover:bg-gray-200 transition">
             <div>
                 <h3 class="text-lg font-semibold">Konfigurasi Form</h3>
-                <p class="text-gray-600">Total Variabel : {{ $total_variabel }}</p>
+                <p class="text-gray-600">Total Variabel : {{ $total_variable }}</p>
             </div>
             <span class="text-xl">➤</span>
         </a>
@@ -37,7 +37,7 @@
         <a href="{{ route('users') }}" class="block bg-gray-100 p-4 rounded-lg shadow-md flex justify-between items-center hover:bg-gray-200 transition">
             <div>
                 <h3 class="text-lg font-semibold">Konfigurasi Pengguna</h3>
-                <p class="text-gray-600">Total Pengguna : {{ $total_users }}</p>
+                <p class="text-gray-600">Total Pengguna : {{ $total_user }}</p>
             </div>
             <span class="text-xl">➤</span>
         </a>

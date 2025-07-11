@@ -1,66 +1,145 @@
-<!-- <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Work Area Audit Application - Floor 4 Wahana Makmur Sejati
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## Overview
 
-## About Laravel
+The Work Area Audit Application is designed to manage and streamline the audit process for the 4th floor of Wahana Makmur Sejati. It consists of a web application built with **Laravel** and an API for mobile applications, facilitating efficient audit management with three distinct user roles: **Admin**, **Steering Committee**, and **Auditor**. The application ensures secure authentication, user management, and audit workflows, integrated with an HRIS database for employee verification.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Features
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+-   **Role-Based Access Control**:
+    -   **Admin**: Full control over the application, including user configuration, form management, area and floor assignments, PIC (Person in Charge) management, and audit summary generation.
+    -   **Steering Committee**: Can approve audits, view summaries, and download audit reports.
+    -   **Auditor**: Responsible for filling out audit forms by selecting areas and PICs, then completing the audit process.
+-   **Authentication**:
+    -   **Web**: Uses session-based authentication.
+    -   **Mobile API**: Uses JWT (JSON Web Token) for secure access.
+-   **Account Creation**:
+    -   Requires a valid **NIK** (employee ID) registered in the HRIS database.
+    -   Account activation via **email OTP** (One-Time Password).
+    -   One account is tied to one device (based on device ID), and one device can only use one account.
+-   **Login**: Uses username and password created during account setup.
+-   **Audit Workflow**:
+    -   Auditors select an area and PIC, then fill out audit forms.
+    -   Steering Committee reviews and approves audits.
+    -   Admins manage configurations and generate reports.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Tech Stack
 
-## Learning Laravel
+-   **Backend**: Laravel (PHP)
+-   **Frontend**: Laravel Blade (for web)
+-   **API**: RESTful API with JWT authentication for mobile
+-   **Database**: Integrated with HRIS database for employee NIK validation
+-   **Authentication**: Session (web), JWT (API), Email OTP for account activation
+-   **Deployment**: Managed via GitHub branches (`dev`, `staging`, `prod`)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Branch Information
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+This README is tailored for the following branches:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+-   **Dev**: Development environment for testing new features and bug fixes.
+-   **Staging**: Pre-production environment for final testing before deployment to production.
+-   **Prod**: Production environment for live usage.
 
-## Laravel Sponsors
+## Setup Instructions
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+### Prerequisites
 
-### Premium Partners
+-   PHP >= 8.x
+-   Composer
+-   MySQL or compatible database
+-   Node.js and npm (for frontend assets)
+-   Access to HRIS database for NIK validation
+-   Mail server configuration for OTP emails
+-   GitHub repository access
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+### Installation
+
+1. **Clone the Repository**:
+    ```bash
+    git clone <repository-url>
+    git checkout <branch-name>  # dev, staging, or prod
+    ```
+2. **Install Dependencies**:
+    ```bash
+    composer install
+    npm install
+    npm run build
+    ```
+3. **Environment Configuration**:
+    - Copy `.env.example` to `.env` and configure:
+        - Database connection details
+        - HRIS database integration
+        - Mail server settings for OTP
+        - JWT secret for API
+    ```bash
+    cp .env.example .env
+    ```
+4. **Generate Application Key**:
+    ```bash
+    php artisan key:generate
+    ```
+5. **Run Migrations**:
+    ```bash
+    php artisan migrate
+    ```
+6. **Seed Database** (if applicable):
+    ```bash
+    php artisan db:seed
+    ```
+7. **Start the Development Server**:
+    ```bash
+    php artisan serve
+    ```
+8. **API Testing**:
+    - Use tools like Postman to test API endpoints.
+    - Ensure JWT tokens are included in API requests.
+
+### Branch-Specific Notes
+
+-   **Dev**:
+    -   Used for active development and testing.
+    -   May contain experimental features or incomplete code.
+    -   Run `php artisan migrate:fresh` to reset the database for testing.
+-   **Staging**:
+    -   Mirrors production setup for final testing.
+    -   Use production-like database and mail server configurations.
+    -   Test all features thoroughly before merging to `prod`.
+-   **Prod**:
+    -   Live environment; ensure all configurations are secure.
+    -   Avoid running migrations that drop data (`migrate:fresh`).
+    -   Monitor logs and performance post-deployment.
+
+## Authentication Flow
+
+1. **Account Creation**:
+    - Users provide a valid NIK, verified against the HRIS database.
+    - An OTP is sent to the registered email for account activation.
+    - Users set a username and password, tied to their device ID.
+2. **Login**:
+    - Web: Session-based login with username and password.
+    - Mobile: JWT token issued after successful login, tied to device ID.
+3. **Device Restriction**:
+    - One account per device, enforced via device ID checks.
+
+## Usage
+
+-   **Admin**:
+    -   Configure users, forms, areas, floors, and PICs via the web interface.
+    -   View and generate audit summaries.
+-   **Steering Committee**:
+    -   Review and approve audit submissions.
+    -   Download audit reports in the web interface.
+-   **Auditor**:
+    -   Log in via mobile app, select area and PIC, and fill out audit forms.
+    -   Submit forms for Steering Committee approval.
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+-   Create feature branches from `dev` for new features or bug fixes.
+-   Submit pull requests to `dev` for review.
+-   Ensure code passes tests and follows Laravel coding standards.
+-   Merge to `staging` after thorough testing, then to `prod` after approval.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT). -->
+This project is proprietary and intended for internal use by Wahana Makmur Sejati. Unauthorized distribution or use is prohibited.

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\AuditAnswerExport;
 use App\Models\Area;
 use App\Models\AuditAnswer;
 use App\Models\DetailAuditAnswer;
@@ -11,6 +12,7 @@ use App\Models\Karyawan;
 use App\Models\Lantai;
 use App\Models\PicArea;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AuditOfficeSteercoController extends Controller
 {
@@ -39,6 +41,7 @@ class AuditOfficeSteercoController extends Controller
         $auditAnswerId = $id;
         $data = DetailAuditAnswer::with([
             'variabel.temaForm.form',
+            'variabel.standarFotos',
             'detailAuditeeAnswer.userAuditee',
             'detailFotoAuditAnswer'
         ])->where('audit_answer_id', $auditAnswerId)->get();
@@ -55,6 +58,12 @@ class AuditOfficeSteercoController extends Controller
                 'variabel' => $detail->variabel->variabel,
                 'standar_variabel' => $detail->variabel->standar_variabel,
                 'standar_foto' => $detail->variabel->standar_foto,
+                'list_standar_foto' => $detail->variabel->standarFotos->map(function ($foto) {
+                    return [
+                        'id' => $foto->id,
+                        'image_path' => $foto->image_path
+                    ];
+                }),
                 'tema' => $detail->variabel->temaForm->tema,
                 'kategori' => $detail->variabel->temaForm->form->kategori,
                 'score' => $detail->score,
@@ -252,6 +261,59 @@ class AuditOfficeSteercoController extends Controller
         ];
     }
 
+    public function previewExcel($id)
+    {
+        $auditAnswerId = $id;
+        $data = DetailAuditAnswer::with([
+            'variabel.temaForm.form',
+            'variabel.standarFotos',
+            'detailAuditeeAnswer.userAuditee',
+            'detailFotoAuditAnswer'
+        ])->where('audit_answer_id', $auditAnswerId)->get();
+
+        if ($data->isEmpty()) {
+            return redirect()->back()->with('audit_office_error', 'Data tidak ditemukan');
+        }
+
+        $formattedData = $this->formatAuditData($data);
+        $auditAnswer = AuditAnswer::where('id', $auditAnswerId)->first();
+
+        $grade = $this->getGrade($auditAnswerId);
+        $chargeFees = $this->calculateAuditChargeFees($auditAnswerId);
+        return view('steerco.audit-office.detail.preview-excel', compact('formattedData', 'auditAnswer', 'grade', 'id', 'chargeFees'));
+    }
+
+    public function downloadExcel($id)
+    {
+        $auditAnswerId = $id;
+        $data = DetailAuditAnswer::with([
+            'variabel.temaForm.form',
+            'variabel.standarFotos',
+            'detailAuditeeAnswer.userAuditee',
+            'detailFotoAuditAnswer'
+        ])->where('audit_answer_id', $auditAnswerId)->get();
+
+        if ($data->isEmpty()) {
+            return redirect()->back()->with('audit_office_error', 'Data tidak ditemukan');
+        }
+
+        $formattedData = $this->formatAuditData($data);
+        $auditAnswer = AuditAnswer::where('id', $auditAnswerId)->first();
+        $picId = $auditAnswer->pic_area;
+        $empId = PicArea::where('id', $picId)->first()->pic_id;
+        $karyawan = Karyawan::where('emp_id', $empId)->first();
+        $picName = $karyawan ? $karyawan->emp_name : null;
+        $grade = $this->getGrade($auditAnswerId);
+
+        // Get signatures data
+        $signatures = DetailSignatureAuditAnswer::where('audit_answer_id', $auditAnswerId)->first();
+
+        $fileName = 'Audit_Report_' . $auditAnswer->area_id . '_' . date('Y-m-d') . '.xlsx';
+
+        $chargeFees = $this->calculateAuditChargeFees($auditAnswerId);
+        return Excel::download(new AuditAnswerExport($formattedData, $auditAnswer, $grade, $signatures, $chargeFees, $picName), $fileName);
+    }
+
     private function formatAuditData($data)
     {
         return $data->map(function ($detail) {
@@ -262,6 +324,12 @@ class AuditOfficeSteercoController extends Controller
                 'variabel' => $detail->variabel->variabel,
                 'standar_variabel' => $detail->variabel->standar_variabel,
                 'standar_foto' => $detail->variabel->standar_foto,
+                'list_standar_foto' => $detail->variabel->standarFotos->map(function ($foto) {
+                    return [
+                        'id' => $foto->id,
+                        'image_path' => $foto->image_path
+                    ];
+                }),
                 'tema' => $detail->variabel->temaForm->tema,
                 'kategori' => $detail->variabel->temaForm->form->kategori,
                 'score' => $detail->score,
@@ -280,5 +348,22 @@ class AuditOfficeSteercoController extends Controller
                 }),
             ];
         });
+    }
+
+    public function auditApprove($id)
+    {
+        $auditAnswerId = $id;
+        $auditAnswer = AuditAnswer::find($auditAnswerId);
+        if (!$auditAnswer) {
+            return redirect()->back()->with('audit_office_error', 'Form audit tidak ditemukan');
+        }
+
+        if ($auditAnswer->status === 'approved') {
+            return redirect()->back()->with('audit_office_error', 'Form audit sudah disetujui');
+        }
+
+        $auditAnswer->status = 'approved';
+        $auditAnswer->save();
+        return redirect()->back()->with('audit_office_success', 'Form audit berhasil disetujui');
     }
 }

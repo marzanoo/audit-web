@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.steerco')
 @section('title', 'Audit Office - Audit App')
 
 @section('content')
@@ -14,10 +14,10 @@
         </div>
     @endif
     <div class="flex justify-between items-center mb-4">
-        <a href="{{ route('audit-office-admin-audit-form', $auditAnswer->area_id) }}" class="text-lg font-semibold flex items-center w-fit">
+        <a href="{{ route('audit-office-steerco-audit-form', $auditAnswer->area_id) }}" class="text-lg font-semibold flex items-center w-fit">
             ← Kembali
         </a>
-        <a href="{{ route('audit-office-admin-preview-excel', $auditAnswer->id) }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
+        <a href="{{ route('audit-office-steerco-preview-excel', $auditAnswer->id) }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
@@ -42,13 +42,22 @@
                         <p class="text-gray-600 mb-2">
                             <strong>Standar:</strong> {{ $detail['standar_variabel'] }}
                         </p>
-                        @if ($detail['standar_foto'])
+                        @if (count ($detail['list_standar_foto']) > 0)
                             <div class="mt-3 mb-4">
                                 <h5 class="text-md font-medium text-gray-700 mb-2">Foto Standar:</h5>
-                                <img src="{{ asset('storage/' . $detail['standar_foto']) }}" 
-                                     alt="Foto Standar" 
-                                     class="w-40 h-40 object-cover rounded-lg shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
-                                     onclick="openModal('{{ asset('storage/' . $detail['standar_foto']) }}', 'Foto Standar')">
+                                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                    @foreach($detail['list_standar_foto'] as $index => $standarFoto)
+                                        <div class="relative">
+                                            <img src="{{ asset('storage/' . $standarFoto['image_path']) }}" 
+                                                 alt="Foto Standar {{ $index + 1 }}" 
+                                                 class="w-full h-32 object-cover rounded-lg shadow-sm cursor-pointer hover:opacity-80 transition-opacity hover:scale-105 transform"
+                                                 onclick="openModal('{{ asset('storage/' . $standarFoto['image_path']) }}', 'Foto Standar {{ $index + 1 }}')">
+                                            <div class="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                                                {{ $index + 1 }}
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>                                
                             </div>
                         @endif
                         <p class="text-gray-600 mb-2">

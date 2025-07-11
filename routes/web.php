@@ -48,9 +48,9 @@ Route::middleware('verifying')->post('/resend-otp-aktivasi', [AuthController::cl
 
 //---------------------------------Admin-------------------------------------//
 //-----Konfigurasi Objek Audit-----//
-Route::middleware('auth:web')->get('/konfigurasi', [DashboardController::class, 'konfigurasiView'])->name('konfigurasi');
+Route::middleware(['auth:web', 'role:1'])->get('/konfigurasi', [DashboardController::class, 'konfigurasiView'])->name('konfigurasi');
 //Lantai
-Route::middleware('auth:web')->group(function () {
+Route::middleware(['auth:web', 'role:1'])->group(function () {
     Route::get('/lantai', [LantaiController::class, 'index'])->name('lantai');
     Route::get('/add-lantai', [LantaiController::class, 'addLantai'])->name('add-lantai');
     Route::post('/add-lantai', [LantaiController::class, 'store'])->name('add-lantai');
@@ -58,7 +58,7 @@ Route::middleware('auth:web')->group(function () {
 });
 
 //Area
-Route::middleware('auth:web')->group(function () {
+Route::middleware(['auth:web', 'role:1'])->group(function () {
     Route::get('/area', [AreaController::class, 'index'])->name('area');
     Route::get('/add-area', [AreaController::class, 'addArea'])->name('add-area');
     Route::post('/add-area', [AreaController::class, 'store'])->name('add-area');
@@ -68,7 +68,7 @@ Route::middleware('auth:web')->group(function () {
 });
 
 //PIC Area
-Route::middleware('auth:web')->group(function () {
+Route::middleware(['auth:web', 'role:1'])->group(function () {
     Route::get('/pic-area', [PicAreaController::class, 'index'])->name('pic-area');
     Route::get('/add-pic-area', [PicAreaController::class, 'addPicArea'])->name('add-pic-area');
     Route::post('/add-pic-area', [PicAreaController::class, 'store'])->name('add-pic-area');
@@ -79,7 +79,7 @@ Route::middleware('auth:web')->group(function () {
 });
 
 //User
-Route::middleware('auth:web')->group(function () {
+Route::middleware(['auth:web', 'role:1'])->group(function () {
     Route::get('/users', [UserController::class, 'index'])->name('users');
     Route::get('/edit-user/{id}', [UserController::class, 'editUser'])->name('edit-user');
     Route::put('/edit-user/{id}', [UserController::class, 'update'])->name('edit-user');
@@ -91,7 +91,7 @@ Route::middleware('auth:web')->group(function () {
 
 //-----Form-----//
 //Form
-Route::middleware('auth:web')->group(function () {
+Route::middleware(['auth:web', 'role:1'])->group(function () {
     Route::get('/form', [FormController::class, 'index'])->name('form');
     Route::get('/add-form', [FormController::class, 'addForm'])->name('add-form');
     Route::post('/add-form', [FormController::class, 'store'])->name('add-form');
@@ -99,7 +99,7 @@ Route::middleware('auth:web')->group(function () {
 });
 
 //Tema Form
-Route::middleware('auth:web')->group(function () {
+Route::middleware(['auth:web', 'role:1'])->group(function () {
     Route::get('/tema-form/{id}', [TemaFormController::class, 'index'])->name('tema-form');
     Route::get('/add-tema-form/{id}', [TemaFormController::class, 'addTemaForm'])->name('add-tema-form');
     Route::post('/add-tema-form/{id}', [TemaFormController::class, 'store'])->name('add-tema-form');
@@ -109,7 +109,7 @@ Route::middleware('auth:web')->group(function () {
 });
 
 //Variabel Form
-Route::middleware('auth:web')->group(function () {
+Route::middleware(['auth:web', 'role:1'])->group(function () {
     Route::get('/variabel-form/{id}', [VariabelFormController::class, 'index'])->name('variabel-form');
     Route::get('/add-variabel-form/{id}', [VariabelFormController::class, 'addVariabelForm'])->name('add-variabel-form');
     Route::post('/add-variabel-form/{id}', [VariabelFormController::class, 'store'])->name('add-variabel-form');
@@ -119,7 +119,7 @@ Route::middleware('auth:web')->group(function () {
 });
 
 //Audit Office
-Route::middleware('auth:web')->group(function () {
+Route::middleware(['auth:web', 'role:1'])->group(function () {
     Route::get('/audit-office-admin', [AuditOfficeAdminController::class, 'showArea'])->name('audit-office-admin');
     // Route::get('/audit-office-admin-area/{id}', [AuditOfficeAdminController::class, 'showArea'])->name('audit-office-admin-area');
     Route::get('/audit-office-admin-audit-form/{id}', [AuditOfficeAdminController::class, 'showAuditForm'])->name('audit-office-admin-audit-form');
@@ -132,24 +132,28 @@ Route::middleware('auth:web')->group(function () {
 
 //---------------------------------Auditor-------------------------------------//
 //Audit Answer
-Route::middleware('auth:web')->group(function () {
+Route::middleware(['auth:web', 'role:1,3'])->group(function () {
     Route::get('/audit-answer', [AuditAnswerController::class, 'showFormAudit'])->name('audit-answer');
     Route::post('/audit-answer-insert', [AuditAnswerController::class, 'store'])->name('audit-answer-insert');
 });
 
 //Detail Audit Answer
-Route::middleware('auth:web')->group(function () {
+Route::middleware(['auth:web', 'role:1,3'])->group(function () {
     Route::get('/detail-audit-answer/{id}', [DetailAuditAnswerController::class, 'showFormAuditDetail'])->name('detail-audit-answer');
     Route::post('/detail-audit-answer-insert', [DetailAuditAnswerController::class, 'submitAnswer'])->name('detail-audit-answer-insert');
 });
 
 //---------------------------------Steering Committee-------------------------------------//
 //Audit Office
-Route::middleware('auth:web')->group(function () {
+Route::middleware(['auth:web', 'role:1,2'])->group(function () {
     Route::get('/audit-office-steerco', [AuditOfficeSteercoController::class, 'showArea'])->name('audit-office-steerco');
     // Route::get('/audit-office-steerco-area/{id}', [AuditOfficeSteercoController::class, 'showArea'])->name('audit-office-steerco-area');
     Route::get('/audit-office-steerco-audit-form/{id}', [AuditOfficeSteercoController::class, 'showAuditForm'])->name('audit-office-steerco-audit-form');
     Route::get('/detail-audit-office-steerco-audit-form/{id}', [AuditOfficeSteercoController::class, 'getAuditAnswer'])->name('detail-audit-office-steerco-audit-form');
+    Route::get('/steerco/audit-office/preview-excel/{id}', [AuditOfficeSteercoController::class, 'previewExcel'])->name('audit-office-steerco-preview-excel');
+    Route::get('/steerco/audit-office/download-excel/{id}', [AuditOfficeSteercoController::class, 'downloadExcel'])->name('audit-office-steerco-download-excel');
+    Route::put('/approve-audit-form/{id}', [AuditOfficeSteercoController::class, 'auditApprove'])->name('approve-audit-office-steerco');
+    // Route::get('/audit-office-steerco/download-pdf/{id}', [AuditOfficeSteercoController::class, 'downloadPdf'])->name('audit-office-steerco-download-pdf');
 });
 
 Route::get('/audit/approve/{id}', [AuditAnswerController::class, 'approve'])->name('audit.approve');
