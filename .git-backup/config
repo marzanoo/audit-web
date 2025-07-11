@@ -11,3 +11,15 @@
 [branch "main"]
 	remote = origin
 	merge = refs/heads/main
+[branch "dev"]
+	vscode-merge-base = origin/main
+	remote = origin
+	merge = refs/heads/dev
+[branch "staging"]
+	vscode-merge-base = origin/main
+	remote = origin
+	merge = refs/heads/staging
+[branch "prod"]
+	vscode-merge-base = origin/main
+	remote = origin
+	merge = refs/heads/prod

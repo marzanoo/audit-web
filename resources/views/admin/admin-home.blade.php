@@ -1,14 +1,14 @@
 @extends('layouts.admin')
 @section('title', 'Admin Home')
-
+    
 @section('content')
 <div class="container mx-auto p-4">
     <div class="bg-gray-100 p-4 rounded-lg shadow-md">
         <h1 class="text-2xl font-bold">Selamat Datang!</h1>
         <p class="text-xl mb-2 mt-2">{{ auth()->user()->name }}</p>
-        <p class="text-lg font-semibold">Role :
-            @if (auth()->user()->role == 1)
-            <span class="bg-green-500 text-white px-2 py-1 rounded">Admin</span>
+        <p class="text-lg font-semibold">Role : 
+            @if (auth()->user()->role == 1) 
+                <span class="bg-green-500 text-white px-2 py-1 rounded">Admin</span>
             @endif
         </p>
     </div>

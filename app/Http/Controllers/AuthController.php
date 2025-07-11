@@ -41,34 +41,22 @@ class AuthController extends Controller
         }
 
         $browserDeviceId = $request->device_id;
-	
-	$existingUserWithDevice = User::where('device_id', $browserDeviceId)->first();
+        $existingUserWithDevice = User::where('device_id', $browserDeviceId)->first();
 
         if (!$user->device_id) {
-	    if ($existingUserWithDevice && $existingUserWithDevice->id !== $user->id) {
-    	        if ($user->role == 1) {
-        	    // Role 1 boleh override device_id walaupun sudah dipakai akun lain
-		    $existingUserWithDevice->device_id = null;
-		    $existingUserWithDevice->save();
-	            $user->device_id = $browserDeviceId;
-        	    $user->save();
-	        } else {
-        	    // Role biasa, device udah dipakai = tolak
-	            Auth::logout();
-        	    return back()->with(['login_error' => 'Device ini sudah digunakan di akun lain.']);
-	        }
-	    } else {
-        	// Belum ada yang pakai atau dipakai dirinya sendiri
-	        $user->device_id = $browserDeviceId;
-	        $user->save();
-	    }
+            if ($existingUserWithDevice && $existingUserWithDevice->id !== $user->id) {
+                Auth::logout();
+                return back()->with(['login_error' => 'Perangkat ini sudah digunakan oleh akun lain. Satu akun hanya bisa digunakan di satu perangkat.']);
+            }
+            $user->device_id = $browserDeviceId;
+            $user->save();
         } elseif ($user->device_id !== $browserDeviceId && $user->role == 1) {
             $user->device_id = $browserDeviceId;
             $user->save();
         } elseif ($user->device_id !== $browserDeviceId) {
             Auth::logout();
             return back()->with(['login_error' => 'Akun hanya bisa digunakan di perangkat pertama yang terdaftar.']);
-        }	
+        }
 
         // Extended cookie duration to 5 years
         Cookie::queue('device_id', $browserDeviceId, 60 * 24 * 365 * 5);

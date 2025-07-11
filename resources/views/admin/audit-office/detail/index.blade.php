@@ -326,41 +326,41 @@
 </div>
 
 <script>
-    function openModal(imageSrc, caption) {
-        const modal = document.getElementById('imageModal');
-        const modalImage = document.getElementById('modalImage');
-        const modalCaption = document.getElementById('modalCaption');
-        
-        modalImage.src = imageSrc;
-        modalCaption.textContent = caption;
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        
-        // Prevent body scroll when modal is open
-        document.body.style.overflow = 'hidden';
+function openModal(imageSrc, caption) {
+    const modal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    const modalCaption = document.getElementById('modalCaption');
+    
+    modalImage.src = imageSrc;
+    modalCaption.textContent = caption;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    const modal = document.getElementById('imageModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    
+    // Restore body scroll
+    document.body.style.overflow = 'auto';
+}
+
+// Close modal with ESC key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeModal();
     }
+});
 
-    function closeModal() {
-        const modal = document.getElementById('imageModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        
-        // Restore body scroll
-        document.body.style.overflow = 'auto';
+// Close modal when clicking outside image
+document.getElementById('imageModal').addEventListener('click', function(event) {
+    if (event.target === this) {
+        closeModal();
     }
-
-    // Close modal with ESC key
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            closeModal();
-        }
-    });
-
-    // Close modal when clicking outside image
-    document.getElementById('imageModal').addEventListener('click', function(event) {
-        if (event.target === this) {
-            closeModal();
-        }
-    });
+});
 </script>
 @endsection

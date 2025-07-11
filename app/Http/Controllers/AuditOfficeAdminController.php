@@ -14,7 +14,6 @@ use App\Models\PicArea;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
-use PhpOffice\PhpSpreadsheet\Shared\XMLWriter;
 
 class AuditOfficeAdminController extends Controller
 {
@@ -348,13 +347,13 @@ class AuditOfficeAdminController extends Controller
                 'variabel_form_id' => $detail->variabel_form_id,
                 'variabel' => $detail->variabel->variabel,
                 'standar_variabel' => $detail->variabel->standar_variabel,
+                'standar_foto' => $detail->variabel->standar_foto,
                 'list_standar_foto' => $detail->variabel->standarFotos->map(function ($foto) {
                     return [
                         'id' => $foto->id,
                         'image_path' => $foto->image_path
                     ];
                 }),
-                'standar_foto' => $detail->variabel->standar_foto,
                 'tema' => $detail->variabel->temaForm->tema,
                 'kategori' => $detail->variabel->temaForm->form->kategori,
                 'score' => $detail->score,

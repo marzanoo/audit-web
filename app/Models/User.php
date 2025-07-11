@@ -19,6 +19,7 @@ class User extends Authenticatable implements JWTSubject
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    protected $connection = 'mysql';
     protected $table = 'users';
 
     public function getJWTIdentifier()
