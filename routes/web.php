@@ -40,7 +40,7 @@ Route::get('/reset-password-otp', [PasswordResetController::class, 'inputOtp'])-
 Route::post('/resend-otp-reset', [PasswordResetController::class, 'resendOtpReset'])->name('resend-otp-reset');
 Route::post('/verify-reset-otp', [PasswordResetController::class, 'verifyResetOtp'])->name('verify-reset-otp');
 Route::get('/reset-new-password', [PasswordResetController::class, 'newPassword'])->name('reset-new-password');
-Route::post('/reset-new-password', [PasswordResetController::class, 'resetPassword'])->name('reset-new-password');
+Route::post('/reset-new-password', [PasswordResetController::class, 'resetPassword'])->name('submit-reset-new-password');
 Route::middleware('auth:web')->post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware('verifying')->get('/verify-email', [AuthController::class, 'verifyEmail'])->name('verify-email');
 Route::middleware('verifying')->post('/verify-otp-aktivasi', [AuthController::class, 'verifyOtpAktivasi'])->name('verify-otp-aktivasi');
@@ -126,7 +126,7 @@ Route::middleware(['auth:web', 'role:1'])->group(function () {
     Route::get('/detail-audit-office-admin-audit-form/{id}', [AuditOfficeAdminController::class, 'showAuditAnswer'])->name('detail-audit-office-admin-audit-form');
     Route::get('/admin/audit-office/preview-excel/{id}', [AuditOfficeAdminController::class, 'previewExcel'])->name('audit-office-admin-preview-excel');
     Route::get('/admin/audit-office/download-excel/{id}', [AuditOfficeAdminController::class, 'downloadExcel'])->name('audit-office-admin-download-excel');
-    Route::put('/approve-audit-form/{id}', [AuditOfficeAdminController::class, 'auditApprove'])->name('approve-audit-office-admin');
+    Route::put('/admin/approve-audit-form/{id}', [AuditOfficeAdminController::class, 'auditApprove'])->name('approve-audit-office-admin');
     // Route::get('/audit-office-admin/download-pdf/{id}', [AuditOfficeAdminController::class, 'downloadPdf'])->name('audit-office-admin-download-pdf');
 });
 
@@ -152,7 +152,7 @@ Route::middleware(['auth:web', 'role:1,2'])->group(function () {
     Route::get('/detail-audit-office-steerco-audit-form/{id}', [AuditOfficeSteercoController::class, 'getAuditAnswer'])->name('detail-audit-office-steerco-audit-form');
     Route::get('/steerco/audit-office/preview-excel/{id}', [AuditOfficeSteercoController::class, 'previewExcel'])->name('audit-office-steerco-preview-excel');
     Route::get('/steerco/audit-office/download-excel/{id}', [AuditOfficeSteercoController::class, 'downloadExcel'])->name('audit-office-steerco-download-excel');
-    Route::put('/approve-audit-form/{id}', [AuditOfficeSteercoController::class, 'auditApprove'])->name('approve-audit-office-steerco');
+    Route::put('/steerco/approve-audit-form/{id}', [AuditOfficeSteercoController::class, 'auditApprove'])->name('approve-audit-office-steerco');
     // Route::get('/audit-office-steerco/download-pdf/{id}', [AuditOfficeSteercoController::class, 'downloadPdf'])->name('audit-office-steerco-download-pdf');
 });
 

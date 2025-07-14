@@ -39,7 +39,7 @@
             <p class="text-4xl text-green-600 mt-3 font-semibold">{{ $total_audit }}</p>
         </div>
         <a href="{{ route('audit-office-steerco') }}" class="bg-gray-100 p-4 rounded-lg shadow-md text-center">
-            <h4 class="text-xl font-bold">Isi Form Audit</h4>
+            <h4 class="text-xl font-bold">Audit Office</h4>
             <p class="text-2xl text-green-600 mt-3 font-semibold">Lihat</p>
         </a>
     </div>

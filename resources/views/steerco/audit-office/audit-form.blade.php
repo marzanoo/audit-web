@@ -31,6 +31,21 @@
                 <span class="text-lg w-2/3">{{ $item->auditor->name }}</span>
             </div>
 
+            {{-- Data Status --}}
+            @php
+                $statusClass = match($item->status) {
+                    'pending' => 'text-red-600 font-bold',
+                    'approved' => 'text-green-600 font-bold',
+                    default => 'text-gray-500'
+                };
+            @endphp
+            <div class="flex justify-between">
+                <span class="text-lg font-semibold w-1/3">Status</span>
+                <span class="text-lg w-2/3 uppercase {{ $statusClass }}">
+                    {{ $item->status }}
+                </span>
+            </div>
+
             {{-- Lihat--}}
             <div class="flex gap-2 mt-3 justify-end">
                 {{-- Tombol Lihat --}}

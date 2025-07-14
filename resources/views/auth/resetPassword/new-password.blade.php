@@ -25,7 +25,7 @@
         @endif
 
         <!-- Form -->
-        <form action="{{ route('reset-new-password') }}" method="POST">
+        <form action="{{ route('submit-reset-new-password') }}" method="POST">
             @csrf
             <input type="email" name="email" value="{{ session('reset_email') }}" hidden>
             <div class="mb-4">
