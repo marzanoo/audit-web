@@ -76,7 +76,7 @@ class VariabelFormController extends Controller
                 'id' => $foto->id,
                 'variable_form_id' => $foto->variabel_form_id,
                 'image_path' => $foto->image_path,
-                'photo_url' => $foto->image_path ? asset('storage/' . $foto->image_path) : null
+                'photo_url' => $foto->image_path ?: null
             ];
         });
 

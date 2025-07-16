@@ -484,21 +484,24 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
 
         foreach ($this->formattedData as $detail) {
             // Tambahkan gambar standar jika ada
-            if ($detail['standar_foto']) {
-                $standardImagePath = storage_path('app/public/' . $detail['standar_foto']);
-
-                if (file_exists($standardImagePath)) {
-                    $drawing = new Drawing();
-                    $drawing->setName('Foto Standar');
-                    $drawing->setDescription('Foto Standar');
-                    $drawing->setPath($standardImagePath);
-                    $drawing->setHeight(120);
-                    $drawing->setWidth(120);
-                    $drawing->setResizeProportional(true);
-                    $drawing->setCoordinates('D' . $currentRow);
-                    $drawing->setOffsetX(5);
-                    $drawing->setOffsetY(5);
-                    $drawings[] = $drawing;
+            if (!empty($detail['list_standar_foto']) && count($detail['list_standar_foto']) > 0) {
+                $offsetY = 5;
+                foreach ($detail['list_standar_foto'] as $index => $standarFoto) {
+                    $standarImagePath = storage_path('app/public/' . $standarFoto['image_path']);
+                    if (file_exists($standarImagePath)) {
+                        $drawing = new Drawing();
+                        $drawing->setName('Foto Standar ' . ($index + 1));
+                        $drawing->setDescription('Foto Standar ' . ($index + 1));
+                        $drawing->setPath($standarImagePath);
+                        $drawing->setHeight(120);
+                        $drawing->setWidth(120);
+                        $drawing->setResizeProportional(true);
+                        $drawing->setCoordinates('D' . $currentRow);
+                        $drawing->setOffsetX(5);
+                        $drawing->setOffsetY($offsetY);
+                        $drawings[] = $drawing;
+                        $offsetY += 125;
+                    }
                 }
             }
 
