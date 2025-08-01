@@ -7,9 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditAnswer;
 use App\Models\DetailAuditAnswer;
 use App\Models\DetailAuditeeAnswer;
-use App\Models\DetailSignatureAuditAnswer;
 use App\Models\Karyawan;
-use App\Models\PicArea;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -74,8 +72,7 @@ class AuditOfficeAdminController extends Controller
         $chargeFees = $this->calculateAuditChargeFees($auditAnswerId);
 
         // Simpan file Excel ke storage
-        Storage::makeDirectory('public/audit_reports');
-        $fileName = 'public/audit_reports/' . $fileName;
+
         Excel::store(new AuditAnswerExport($formattedData, $auditAnswer, $grade, $signatures, $chargeFees, $picName), $fileName, 'public');
         // Kembalikan URL untuk download
         $url = url(Storage::url($fileName));
@@ -244,19 +241,13 @@ class AuditOfficeAdminController extends Controller
                 'variabel' => $detail->variabel->variabel,
                 'standar_variabel' => $detail->variabel->standar_variabel,
                 'standar_foto' => $detail->variabel->standar_foto,
-                'list_standar_foto' => $detail->variabel->standarFotos->map(function ($foto) {
-                    return [
-                        'id' => $foto->id,
-                        'image_path' => $foto->image_path
-                    ];
-                }),
                 'tema' => $detail->variabel->temaForm->tema,
                 'kategori' => $detail->variabel->temaForm->form->kategori,
                 'score' => $detail->score,
                 'auditees' => $detail->detailAuditeeAnswer->map(function ($auditee) {
                     return [
                         'id' => $auditee->id,
-                        'auditee' => $auditee->userAuditee ? $auditee->userAuditee->emp_name : $auditee->auditee_name,
+                        'name' => $auditee->userAuditee ? $auditee->userAuditee->emp_name : $auditee->auditee_name,
                         'temuan' => $auditee->temuan
                     ];
                 }),
