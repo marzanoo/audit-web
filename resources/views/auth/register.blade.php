@@ -27,13 +27,14 @@
             {{-- <input type="hidden" name="device_id" id="device_id"> --}}
 
             <div class="mb-4">
-                <input type="n" name="nik" placeholder="NIK" required autofocus
+                <input type="n" name="nik" id="nik" placeholder="NIK" required autofocus
                     class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-300 appearance-none">
+                <p id="nik-error" class="text-red-500 text-sm mt-1 hidden"></p>
             </div>
 
             <div class="mb-4">
-                <input type="text" name="name" placeholder="Fullname" required 
-                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-300">
+                <input type="text" name="name" id="name" placeholder="Fullname" required readonly
+                    class="w-full px-4 py-2 border rounded-lg bg-gray-100 focus:outline-none focus:ring focus:border-blue-300">
             </div>
 
             <div class="mb-4">
@@ -73,10 +74,40 @@
         togglePassword.addEventListener("click", function () {
             if (passwordInput.type === "password") {
                 passwordInput.type = "text";
-                togglePassword.textContent = "🙈"; // Ubah ikon jadi mata tertutup
+                togglePassword.textContent = "🙈";
             } else {
                 passwordInput.type = "password";
-                togglePassword.textContent = "👁️"; // Ubah ikon jadi mata terbuka
+                togglePassword.textContent = "👁️";
+            }
+        });
+    
+        document.getElementById('nik').addEventListener('blur', function() {
+            const nik = this.value;
+            const nameInput = document.getElementById('name');
+            const nikError = document.getElementById('nik-error');
+            if (nik) {
+                fetch(`/api/karyawan/${nik}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data && data.emp_name) {
+                            nameInput.value = data.emp_name;
+                            nikError.textContent = '';
+                            nikError.classList.add('hidden');
+                        } else {
+                            nameInput.value = '';
+                            nikError.textContent = 'Karyawan tidak ditemukan. Silakan hubungi HRD untuk pendaftaran data karyawan.';
+                            nikError.classList.remove('hidden');
+                        }
+                    })
+                    .catch(() => {
+                        nameInput.value = '';
+                        nikError.textContent = 'Terjadi kesalahan saat mengambil data karyawan.';
+                        nikError.classList.remove('hidden');
+                    });
+            } else {
+                nameInput.value = '';
+                nikError.textContent = '';
+                nikError.classList.add('hidden');
             }
         });
     </script>

@@ -7,6 +7,7 @@ use App\Models\VariabelForm;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Spatie\ImageOptimizer\OptimizerChainFactory;
 
 class VariabelFormController extends Controller
 {
@@ -21,6 +22,27 @@ class VariabelFormController extends Controller
     {
         $temaFormId = $id;
         return view('admin.konfigurasi.form.tema.variabel.add-variabel', compact('temaFormId'));
+    }
+
+    private function optimizeAndSaveImage($file)
+    {
+        $maxSize = 2 * 1024 * 1024; // 2MB in bytes
+
+        // Generate filename
+        $foto_name = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+        $foto_path = 'standards/' . $foto_name;
+
+        // Save original file first
+        Storage::disk('public')->put($foto_path, file_get_contents($file));
+        $fullPath = storage_path('app/public/' . $foto_path);
+
+        // If file size > 2MB, optimize it
+        if (filesize($fullPath) > $maxSize) {
+            $optimizerChain = OptimizerChainFactory::create();
+            $optimizerChain->optimize($fullPath);
+        }
+
+        return $foto_path;
     }
 
     public function store(Request $request, $id)
@@ -48,8 +70,7 @@ class VariabelFormController extends Controller
 
             if ($request->hasFile('standar_foto')) {
                 foreach ($request->file('standar_foto') as $foto) {
-                    $foto_name = time() . '_' . uniqid() . '.' . $foto->getClientOriginalExtension();
-                    $foto_path = $foto->storeAs('standards', $foto_name, 'public');
+                    $foto_path = $this->optimizeAndSaveImage($foto);
 
                     DetailFotoStandarVariabel::create([
                         'variabel_form_id' => $variabel->id,
@@ -108,8 +129,7 @@ class VariabelFormController extends Controller
 
             if ($request->hasFile('standar_foto')) {
                 foreach ($request->file('standar_foto') as $foto) {
-                    $foto_name = time() . '_' . uniqid() . '.' . $foto->getClientOriginalExtension();
-                    $foto_path = $foto->storeAs('standards', $foto_name, 'public');
+                    $foto_path = $this->optimizeAndSaveImage($foto);
 
                     DetailFotoStandarVariabel::create([
                         'variabel_form_id' => $variabel->id,

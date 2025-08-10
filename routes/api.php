@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\PicAreaController;
 use App\Http\Controllers\Api\TemaFormController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VariabelFormController;
+use App\Models\Karyawan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -109,7 +110,13 @@ Route::middleware('auth:api')->post('/user', [UserController::class, 'store']);
 Route::middleware('auth:api')->put('/user/{id}', [UserController::class, 'update']);
 Route::middleware('auth:api')->delete('user/{id}', [UserController::class, 'destroy']);
 
-
+Route::get('/karyawan/{nik}', function ($nik) {
+    $karyawan = Karyawan::where('emp_id', $nik)->first();
+    if (!$karyawan) {
+        return response()->json(['message' => 'Karyawan not found'], 404);
+    }
+    return response()->json($karyawan);
+});
 // Route::get('/aktivasi-berhasil', [AuthController::class, 'index'])->name('aktivasi-berhasil');
 
 
