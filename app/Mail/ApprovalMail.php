@@ -42,10 +42,34 @@ class ApprovalMail extends Mailable
         $karyawan = Karyawan::where('emp_id', $empId)->first();
         $dept = $karyawan->dept;
 
-        // Cari manager berdasarkan dept dan remarks
-        $manager = Karyawan::where('dept', $dept)->where('remarks', 'LIKE', '%MGR% ' . $dept . '%')->first();
+        if ($dept == 'MKT') {
+            // Get the AUDITEE number from remarks
+            preg_match('/AUDITEE MKT (\d)/', $karyawan->remarks, $matches);
+            if (!empty($matches)) {
+                $auditeeNumber = $matches[1];
 
-        $managerName = $manager && $manager->emp_name !== 'VACANT' ? $manager->emp_name : 'Manager';
+                // Find corresponding manager with same number
+                $manager = Karyawan::where('dept', 'MKT')
+                    ->where('emp_name', '!=', 'VACANT')
+                    ->where('remarks', 'LIKE', "%MGR MKT {$auditeeNumber}%")
+                    ->first();
+
+                $managerName = $manager ? $manager->emp_name : 'Manager';
+            } else {
+                Log::error('Invalid AUDITEE MKT remarks format', [
+                    'remarks' => $karyawan->remarks
+                ]);
+                $managerName = 'Manager';
+            }
+        } else {
+            // Standard handling for other departments
+            $manager = Karyawan::where('dept', $dept)
+                ->where('remarks', 'LIKE', '%MGR ' . $dept . '%')
+                ->where('emp_name', '!=', 'VACANT')
+                ->first();
+
+            $managerName = $manager ? $manager->emp_name : 'Manager';
+        }
 
         $approveUrl = route('audit.approve', ['id' => $this->auditAnswer->id]);
 

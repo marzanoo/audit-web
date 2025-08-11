@@ -57,35 +57,50 @@ class AuditAnswer extends Model
 
         $dept = $karyawan->dept;
         if ($dept == 'MKT') {
-            // Get all non-vacant managers for MKT (excluding MGR MKT 4)
-            $mktManagers = Karyawan::where('dept', 'MKT')
-                ->where('emp_name', '!=', 'VACANT')
-                ->where(function ($query) {
-                    $query->where('remarks', 'LIKE', '%MGR MKT 1%')
-                        ->orWhere('remarks', 'LIKE', '%MGR MKT 2%')
-                        ->orWhere('remarks', 'LIKE', '%MGR MKT 3%')
-                        ->orWhere('remarks', 'LIKE', '%MGR MKT 5%');
-                })
-                ->get();
+            // Get the AUDITEE number (1-5) from remarks
+            preg_match('/AUDITEE MKT (\d)/', $karyawan->remarks, $matches);
+            if (!empty($matches)) {
+                $auditeeNumber = $matches[1];
 
-            if ($mktManagers->count() > 0) {
-                // Randomly select one manager from the collection
-                $manager = $mktManagers->random();
+                // Find corresponding manager with same number
+                $manager = Karyawan::where('dept', 'MKT')
+                    ->where('emp_name', '!=', 'VACANT')
+                    ->where('remarks', 'LIKE', "%MGR MKT {$auditeeNumber}%")
+                    ->first();
 
-                Log::info('Randomly selected MKT manager', [
-                    'manager_name' => $manager->emp_name,
-                    'manager_position' => $manager->remarks
+                if ($manager) {
+                    Log::info('Selected MKT manager based on AUDITEE number', [
+                        'auditee_remarks' => $karyawan->remarks,
+                        'manager_name' => $manager->emp_name,
+                        'manager_position' => $manager->remarks
+                    ]);
+                } else {
+                    Log::error('No matching MKT manager found for AUDITEE', [
+                        'auditee_remarks' => $karyawan->remarks
+                    ]);
+                    return;
+                }
+            } else {
+                Log::error('Invalid AUDITEE MKT remarks format', [
+                    'remarks' => $karyawan->remarks
                 ]);
+                return;
             }
-        }
-        // Standard handling for other departments
-        else {
+        } else {
+            // Standard handling for other departments
             $manager = Karyawan::where('dept', $dept)
                 ->where('remarks', 'LIKE', '%MGR ' . $dept . '%')
                 ->where('emp_name', '!=', 'VACANT')
                 ->first();
         }
 
-        Mail::to($manager->email)->send(new ApprovalMail($this));
+        if ($manager && $manager->email) {
+            Mail::to($manager->email)->send(new ApprovalMail($this));
+        } else {
+            Log::error('Manager email not found', [
+                'department' => $dept,
+                'manager' => $manager ? $manager->emp_name : 'Not found'
+            ]);
+        }
     }
 }
