@@ -13,6 +13,7 @@ use App\Models\Lantai;
 use App\Models\PicArea;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AuditOfficeAdminController extends Controller
@@ -354,33 +355,47 @@ class AuditOfficeAdminController extends Controller
 
     public function downloadExcel($id)
     {
-        $auditAnswerId = $id;
-        $data = DetailAuditAnswer::with([
-            'variabel.temaForm.form',
-            'variabel.standarFotos',
-            'detailAuditeeAnswer.userAuditee',
-            'detailFotoAuditAnswer'
-        ])->where('audit_answer_id', $auditAnswerId)->get();
+        try {
+            $auditAnswerId = $id;
+            $data = DetailAuditAnswer::with([
+                'variabel.temaForm.form',
+                'variabel.standarFotos',
+                'detailAuditeeAnswer.userAuditee',
+                'detailFotoAuditAnswer'
+            ])->where('audit_answer_id', $auditAnswerId)->get();
 
-        if ($data->isEmpty()) {
-            return redirect()->back()->with('audit_office_error', 'Data tidak ditemukan');
+            if ($data->isEmpty()) {
+                return redirect()->back()->with('audit_office_error', 'Data tidak ditemukan');
+            }
+
+            $formattedData = $this->formatAuditData($data);
+            $auditAnswer = AuditAnswer::where('id', $auditAnswerId)->first();
+            if (!$auditAnswer) {
+                return redirect()->back()->with('audit_office_error', 'Audit answer tidak ditemukan');
+            }
+
+            $picId = $auditAnswer->pic_area;
+            $picArea = PicArea::where('id', $picId)->first();
+            if (!$picArea) {
+                return redirect()->back()->with('audit_office_error', 'PIC area tidak ditemukan');
+            }
+
+            $empId = $picArea->pic_id;
+            $karyawan = $empId ? Karyawan::where('emp_id', $empId)->first() : null;
+            $picName = $karyawan ? $karyawan->emp_name : null;
+            $grade = $this->getGrade($auditAnswerId);
+
+            // Get signatures data
+            $signatures = DetailSignatureAuditAnswer::where('audit_answer_id', $auditAnswerId)->first();
+
+            $fileName = 'Audit_Report_' . $auditAnswer->area_id . '_' . date('Y-m-d') . '.xlsx';
+
+            $chargeFees = $this->calculateAuditChargeFees($auditAnswerId);
+            return Excel::download(new AuditAnswerExport($formattedData, $auditAnswer, $grade, $signatures, $chargeFees, $picName), $fileName);
+        } catch (\Exception $e) {
+            Log::error('Excel download failed: ' . $e->getMessage());
+            return redirect()->back()->with('audit_office_error', 'Gagal mengunduh Excel: ' . $e->getMessage());
         }
-
-        $formattedData = $this->formatAuditData($data);
-        $auditAnswer = AuditAnswer::where('id', $auditAnswerId)->first();
-        $picId = $auditAnswer->pic_area;
-        $empId = PicArea::where('id', $picId)->first()->pic_id;
-        $karyawan = Karyawan::where('emp_id', $empId)->first();
-        $picName = $karyawan ? $karyawan->emp_name : null;
-        $grade = $this->getGrade($auditAnswerId);
-
-        // Get signatures data
-        $signatures = DetailSignatureAuditAnswer::where('audit_answer_id', $auditAnswerId)->first();
-
-        $fileName = 'Audit_Report_' . $auditAnswer->area_id . '_' . date('Y-m-d') . '.xlsx';
-
-        $chargeFees = $this->calculateAuditChargeFees($auditAnswerId);
-        return Excel::download(new AuditAnswerExport($formattedData, $auditAnswer, $grade, $signatures, $chargeFees, $picName), $fileName);
     }
 
     private function formatAuditData($data)
