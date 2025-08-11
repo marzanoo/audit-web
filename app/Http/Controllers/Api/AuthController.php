@@ -43,7 +43,7 @@ class AuthController extends Controller
             ], 403);
         }
 
-        if ($user->email_verified_at == null) { 
+        if ($user->email_verified_at == null) {
             return response()->json([
                 'message' => 'Email belum diverifikasi',
                 'email' => $user->email
@@ -98,7 +98,7 @@ class AuthController extends Controller
             'name' => $request->name,
             'username' => $request->username,
             'email' => $request->email,
-            'role' => 1,
+            'role' => 3,
             'password' => Hash::make($request->password)
         ]);
 

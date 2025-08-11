@@ -71,5 +71,6 @@ class Kernel extends HttpKernel
         'verifying' => \App\Http\Middleware\EnsureUserIsVerifying::class,
         'role' => \App\Http\Middleware\RestrictToRole::class,
         'approval.access' => \App\Http\Middleware\ApprovalAccess::class,
+        'admin.or.approval.access' => \App\Http\Middleware\AdminOrApprovalAccess::class,
     ];
 }
