@@ -124,10 +124,14 @@ Route::middleware(['auth:web', 'role:1'])->group(function () {
     // Route::get('/audit-office-admin-area/{id}', [AuditOfficeAdminController::class, 'showArea'])->name('audit-office-admin-area');
     Route::get('/audit-office-admin-audit-form/{id}', [AuditOfficeAdminController::class, 'showAuditForm'])->name('audit-office-admin-audit-form');
     Route::get('/detail-audit-office-admin-audit-form/{id}', [AuditOfficeAdminController::class, 'showAuditAnswer'])->name('detail-audit-office-admin-audit-form');
-    Route::get('/admin/audit-office/preview-excel/{id}', [AuditOfficeAdminController::class, 'previewExcel'])->name('audit-office-admin-preview-excel');
-    Route::get('/admin/audit-office/download-excel/{id}', [AuditOfficeAdminController::class, 'downloadExcel'])->name('audit-office-admin-download-excel');
+
     Route::put('/admin/approve-audit-form/{id}', [AuditOfficeAdminController::class, 'auditApprove'])->name('approve-audit-office-admin');
     // Route::get('/audit-office-admin/download-pdf/{id}', [AuditOfficeAdminController::class, 'downloadPdf'])->name('audit-office-admin-download-pdf');
+});
+
+Route::middleware(('approval.access'))->group(function () {
+    Route::get('/admin/audit-office/preview-excel/{id}', [AuditOfficeAdminController::class, 'previewExcel'])->name('audit-office-admin-preview-excel');
+    Route::get('/admin/audit-office/download-excel/{id}', [AuditOfficeAdminController::class, 'downloadExcel'])->name('audit-office-admin-download-excel');
 });
 
 //---------------------------------Auditor-------------------------------------//
@@ -156,4 +160,4 @@ Route::middleware(['auth:web', 'role:1,2'])->group(function () {
     // Route::get('/audit-office-steerco/download-pdf/{id}', [AuditOfficeSteercoController::class, 'downloadPdf'])->name('audit-office-steerco-download-pdf');
 });
 
-Route::get('/audit/approve/{id}', [AuditAnswerController::class, 'approve'])->name('audit.approve');
+Route::middleware('approval.access')->get('/audit/approve/{id}', [AuditAnswerController::class, 'approve'])->name('audit-approve');

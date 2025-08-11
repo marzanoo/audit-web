@@ -140,7 +140,7 @@ class AuditOfficeAdminController extends Controller
         }
     }
 
-    private function calculateAuditChargeFees($auditAnswerId)
+    public function calculateAuditChargeFees($auditAnswerId)
     {
         $detailAuditAnswer = DetailAuditAnswer::where('audit_answer_id', $auditAnswerId)->get();
         $grade = $this->getGrade($auditAnswerId);

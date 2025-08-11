@@ -86,20 +86,25 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
 
             $data[] = $row;
 
-            // Hitung tinggi baris
+            // Hitung tinggi baris berdasarkan jumlah gambar
             $baseHeight = 80;
             $imageHeight = 120;
-            if ($detail['standar_foto']) {
-                $this->rowHeights[$currentRow] = $imageHeight;
-            } else {
-                $this->rowHeights[$currentRow] = $baseHeight;
-            }
-            if (count($detail['images']) > 0) {
-                $this->rowHeights[$currentRow] = max(
-                    $this->rowHeights[$currentRow],
-                    $baseHeight + ($imageHeight * min(count($detail['images']), 3))
-                );
-            }
+            $imageSpacing = 5;
+
+            // Hitung tinggi untuk foto standar
+            $standarImageCount = !empty($detail['list_standar_foto']) ? count($detail['list_standar_foto']) : 0;
+            $standarRows = $standarImageCount > 0 ? ceil($standarImageCount / 3) : 0;
+            $standarHeight = $standarRows > 0 ? ($imageHeight + $imageSpacing) * $standarRows : 0;
+
+            // Hitung tinggi untuk foto temuan
+            $temuanImageCount = count($detail['images']);
+            $temuanRows = $temuanImageCount > 0 ? ceil($temuanImageCount / 3) : 0;
+            $temuanHeight = $temuanRows > 0 ? ($imageHeight + $imageSpacing) * $temuanRows : 0;
+
+            // Ambil tinggi maksimal antara standar dan temuan
+            $maxImageHeight = max($standarHeight, $temuanHeight);
+            $this->rowHeights[$currentRow] = max($baseHeight, $maxImageHeight + 20); // +20 untuk padding
+
             $currentRow++;
         }
 
@@ -439,7 +444,7 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
             'E' => 25,  // Variabel
             'F' => 10,  // Score
             'G' => 40,  // Temuan
-            'H' => 25,  // Foto Temuan
+            'H' => 60,  // Foto Temuan
         ];
     }
 
@@ -483,50 +488,14 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
         $currentRow = 4;
 
         foreach ($this->formattedData as $detail) {
-            // Tambahkan gambar standar jika ada
+            // Tambahkan gambar standar jika ada - dengan grid layout
             if (!empty($detail['list_standar_foto']) && count($detail['list_standar_foto']) > 0) {
-                $offsetY = 5;
-                foreach ($detail['list_standar_foto'] as $index => $standarFoto) {
-                    $standarImagePath = storage_path('app/public/' . $standarFoto['image_path']);
-                    if (file_exists($standarImagePath)) {
-                        $drawing = new Drawing();
-                        $drawing->setName('Foto Standar ' . ($index + 1));
-                        $drawing->setDescription('Foto Standar ' . ($index + 1));
-                        $drawing->setPath($standarImagePath);
-                        $drawing->setHeight(120);
-                        $drawing->setWidth(120);
-                        $drawing->setResizeProportional(true);
-                        $drawing->setCoordinates('D' . $currentRow);
-                        $drawing->setOffsetX(5);
-                        $drawing->setOffsetY($offsetY);
-                        $drawings[] = $drawing;
-                        $offsetY += 125;
-                    }
-                }
+                $this->addImagesInGrid($drawings, $detail['list_standar_foto'], 'D', $currentRow, 'Foto Standar');
             }
 
-            // Tambahkan gambar temuan jika ada
+            // Tambahkan gambar temuan jika ada - dengan grid layout
             if (count($detail['images']) > 0) {
-                $offsetY = 5;
-                foreach ($detail['images'] as $index => $image) {
-                    $imagePath = storage_path('app/public/' . $image['image_path']);
-
-                    if (file_exists($imagePath)) {
-                        $drawing = new Drawing();
-                        $drawing->setName('Foto Temuan ' . ($index + 1));
-                        $drawing->setDescription('Foto Temuan ' . ($index + 1));
-                        $drawing->setPath($imagePath);
-                        $drawing->setHeight(120);
-                        $drawing->setWidth(120);
-                        $drawing->setResizeProportional(true);
-                        $drawing->setCoordinates('H' . $currentRow);
-                        $drawing->setOffsetX(5);
-                        $drawing->setOffsetY($offsetY);
-                        $drawings[] = $drawing;
-
-                        $offsetY += 125;
-                    }
-                }
+                $this->addImagesInGrid($drawings, $detail['images'], 'H', $currentRow, 'Foto Temuan');
             }
 
             $currentRow++;
@@ -590,5 +559,62 @@ class AuditAnswerExport implements FromCollection, WithHeadings, WithStyles, Wit
         }
 
         return $drawings;
+    }
+
+    /**
+     * Menambahkan gambar dalam layout grid (maksimal 3 kolom)
+     * 
+     * @param array $drawings Array untuk menampung drawing objects
+     * @param array $images Array gambar yang akan ditambahkan
+     * @param string $startColumn Kolom awal (D atau H)
+     * @param int $row Baris tempat gambar akan ditempatkan
+     * @param string $imageName Prefix nama gambar
+     */
+    private function addImagesInGrid(&$drawings, $images, $startColumn, $row, $imageName)
+    {
+        $imageWidth = 120;
+        $imageHeight = 120;
+        $columnSpacing = 10; // Jarak antar kolom
+        $rowSpacing = 5;     // Jarak antar baris
+
+        // Kolom yang akan digunakan untuk grid (maksimal 3)
+        $columns = [$startColumn];
+
+        // Jika ada ruang untuk kolom tambahan, tambahkan kolom berikutnya
+        if ($startColumn == 'D') {
+            // Untuk foto standar, bisa menggunakan kolom D saja atau expand ke kanan jika diperlukan
+            // Kita akan tetap di kolom D tapi dengan offset X yang berbeda
+        } elseif ($startColumn == 'H') {
+            // Untuk foto temuan, bisa menggunakan kolom H saja dengan offset X yang berbeda
+        }
+
+        foreach ($images as $index => $image) {
+            $imagePath = storage_path('app/public/' . $image['image_path']);
+
+            if (file_exists($imagePath)) {
+                // Hitung posisi dalam grid (maksimal 3 kolom)
+                $gridCol = $index % 3;          // 0, 1, 2
+                $gridRow = floor($index / 3);   // 0, 0, 0, 1, 1, 1, dst
+
+                // Hitung offset X berdasarkan posisi kolom dalam grid
+                $offsetX = 5 + ($gridCol * ($imageWidth + $columnSpacing));
+
+                // Hitung offset Y berdasarkan posisi baris dalam grid
+                $offsetY = 5 + ($gridRow * ($imageHeight + $rowSpacing));
+
+                $drawing = new Drawing();
+                $drawing->setName($imageName . ' ' . ($index + 1));
+                $drawing->setDescription($imageName . ' ' . ($index + 1));
+                $drawing->setPath($imagePath);
+                $drawing->setHeight($imageHeight);
+                $drawing->setWidth($imageWidth);
+                $drawing->setResizeProportional(true);
+                $drawing->setCoordinates($startColumn . $row);
+                $drawing->setOffsetX($offsetX);
+                $drawing->setOffsetY($offsetY);
+
+                $drawings[] = $drawing;
+            }
+        }
     }
 }

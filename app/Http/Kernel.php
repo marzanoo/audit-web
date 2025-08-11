@@ -69,6 +69,7 @@ class Kernel extends HttpKernel
         'jwt.auth' => \App\Http\Middleware\JWTMiddleware::class,
         'auth-api' => \App\Http\Middleware\JWTMiddleware::class,
         'verifying' => \App\Http\Middleware\EnsureUserIsVerifying::class,
-        'role' => \App\Http\Middleware\RestrictToRole::class
+        'role' => \App\Http\Middleware\RestrictToRole::class,
+        'approval.access' => \App\Http\Middleware\ApprovalAccess::class,
     ];
 }

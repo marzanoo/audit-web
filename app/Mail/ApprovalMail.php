@@ -71,7 +71,10 @@ class ApprovalMail extends Mailable
             $managerName = $manager ? $manager->emp_name : 'Manager';
         }
 
-        $approveUrl = route('audit.approve', ['id' => $this->auditAnswer->id]);
+        $approveUrl = route('audit-approve', [
+            'id' => $this->auditAnswer->id,
+            'email' => $manager->email
+        ]);
 
         return $this->subject('Audit Approval Request')
             ->view('emails.approval')
