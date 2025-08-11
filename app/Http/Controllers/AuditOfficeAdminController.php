@@ -158,9 +158,11 @@ class AuditOfficeAdminController extends Controller
         $tertuduhDetails = [];
         $picAreaFee = 0;
         $managerFees = [];
+        $managerDetails = [];
         $gmFees = [];
+        $gmDetails = [];
 
-        //Track tertuduh dept dan temuan
+        // Track tertuduh dept dan temuan
         $deptFindings = [];
         $totalFindings = 0;
 
@@ -176,7 +178,7 @@ class AuditOfficeAdminController extends Controller
                 $tertuduhName = $karyawan ? $karyawan->emp_name : $entry->auditee_name;
                 $tertuduhId = $entry->auditee;
 
-                //skip klo gaada tertuduh dan temuan
+                // Skip klo gaada tertuduh dan temuan
                 if (empty($tertuduhName) || empty($entry->temuan)) {
                     continue;
                 }
@@ -192,7 +194,7 @@ class AuditOfficeAdminController extends Controller
 
                 $totalFindings += $findingCount;
 
-                //calculate fee
+                // Calculate fee
                 $fee = $findingCount * $feeRate;
 
                 if (!isset($tertuduhFees[$tertuduhName])) {
@@ -222,11 +224,8 @@ class AuditOfficeAdminController extends Controller
             }
         }
 
-        //hitung pic area fee
+        // Hitung pic area fee
         $picAreaFee = $totalFindings * $feeRate * 0.5;
-
-        $managerDetails = [];
-        $gmDetails = [];
 
         $gmDeptMap = [
             'TSD' => 'ASD',
@@ -238,15 +237,60 @@ class AuditOfficeAdminController extends Controller
 
         foreach ($deptFindings as $dept => $findingCount) {
             // 1.1 Hitung untuk manager
-            $manager = Karyawan::where('remarks', 'LIKE', "%MGR $dept%")->first();
-            if ($manager) {
-                $managerFee = $findingCount * 1000;
-                $managerFees[$manager->emp_name] = $managerFee;
-                $managerDetails[$manager->emp_name] = [
-                    'dept' => $dept,
-                    'findings' => $findingCount,
-                    'fee' => $managerFee
-                ];
+            if ($dept === 'MKT') {
+                // Handle MKT managers (MGR MKT 1, MGR MKT 2, etc.)
+                for ($i = 1; $i <= 5; $i++) {
+                    $mktAuditeeRemark = "AUDITEE MKT $i";
+                    $mktManagerRemark = "MGR MKT $i";
+
+                    // Find employees with AUDITEE MKT $i remark
+                    $mktEmployees = Karyawan::where('remarks', 'LIKE', "%$mktAuditeeRemark%")->pluck('emp_id')->toArray();
+                    $mktFindingCount = 0;
+
+                    // Calculate findings for this specific MKT sub-department
+                    foreach ($detailAuditAnswer as $detail) {
+                        $tertuduhEntries = DetailAuditeeAnswer::where('detail_audit_answer_id', $detail->id)
+                            ->whereIn('auditee', $mktEmployees)
+                            ->get();
+
+                        foreach ($tertuduhEntries as $entry) {
+                            if (empty($entry->temuan)) {
+                                continue;
+                            }
+
+                            $findingCount = 1; // Default value
+                            if (preg_match('/(\d+(?:\.\d+)?)/', $entry->temuan, $matches)) {
+                                $findingCount = (float) $matches[1];
+                            }
+                            $mktFindingCount += $findingCount;
+                        }
+                    }
+
+                    if ($mktFindingCount > 0) {
+                        $manager = Karyawan::where('remarks', 'LIKE', "%$mktManagerRemark%")->first();
+                        if ($manager) {
+                            $managerFee = $mktFindingCount * 1000;
+                            $managerFees[$manager->emp_name] = $managerFee;
+                            $managerDetails[$manager->emp_name] = [
+                                'dept' => "MKT $i",
+                                'findings' => $mktFindingCount,
+                                'fee' => $managerFee
+                            ];
+                        }
+                    }
+                }
+            } else {
+                // Handle non-MKT managers
+                $manager = Karyawan::where('remarks', 'LIKE', "%MGR $dept%")->first();
+                if ($manager) {
+                    $managerFee = $findingCount * 1000;
+                    $managerFees[$manager->emp_name] = $managerFee;
+                    $managerDetails[$manager->emp_name] = [
+                        'dept' => $dept,
+                        'findings' => $findingCount,
+                        'fee' => $managerFee
+                    ];
+                }
             }
 
             // 1.2 Akumulasi temuan untuk GM berdasarkan mapped dept
