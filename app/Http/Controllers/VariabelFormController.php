@@ -48,26 +48,36 @@ class VariabelFormController extends Controller
     public function store(Request $request, $id)
     {
         $temaFormId = $id;
+
+        // Validasi form
         $request->validate([
             'variabel' => 'required',
             'standar_variabel' => 'required',
-            'standar_foto' => 'nullable|image|mimes:jpg,jpeg,png', // Pastikan format gambar benar
+            'standar_foto.*' => 'nullable|image|mimes:jpg,jpeg,png|max:2048', // validasi tiap file
         ]);
 
-        $variabel = VariabelForm::where('tema_form_id', $temaFormId)->where('variabel', $request->variabel)->exists();
-        if ($variabel) {
-            return redirect()->route('add-variabel-form', $temaFormId)->with(['variabel_error' => 'Variabel sudah ada']);
+        // Cek apakah variabel sudah ada
+        $isExist = VariabelForm::where('tema_form_id', $temaFormId)
+            ->where('variabel', $request->variabel)
+            ->exists();
+
+        if ($isExist) {
+            return redirect()
+                ->route('add-variabel-form', $temaFormId)
+                ->withInput()
+                ->with('variabel_error', 'Variabel sudah ada');
         }
 
         DB::beginTransaction();
         try {
-            //simpan data variabel
+            // Simpan data variabel
             $variabel = VariabelForm::create([
                 'tema_form_id' => $temaFormId,
                 'variabel' => $request->variabel,
                 'standar_variabel' => $request->standar_variabel,
             ]);
 
+            // Simpan foto jika ada
             if ($request->hasFile('standar_foto')) {
                 foreach ($request->file('standar_foto') as $foto) {
                     $foto_path = $this->optimizeAndSaveImage($foto);
@@ -81,12 +91,18 @@ class VariabelFormController extends Controller
 
             DB::commit();
 
-            return redirect()->route('variabel-form', $temaFormId)->with(['variabel_success' => 'Variabel berhasil ditambahkan']);
+            return redirect()
+                ->route('variabel-form', $temaFormId)
+                ->with('variabel_success', 'Variabel berhasil ditambahkan');
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->route('add-variabel-form', $temaFormId)->with(['variabel_error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
+            return redirect()
+                ->route('add-variabel-form', $temaFormId)
+                ->withInput()
+                ->with('variabel_error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
+
 
     public function editVariabelForm($id)
     {
