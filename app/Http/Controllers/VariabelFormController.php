@@ -14,8 +14,9 @@ class VariabelFormController extends Controller
     public function index($id)
     {
         $temaFormId = $id;
-        $variabel = VariabelForm::with('temaForm:id,tema', 'standarFotos')->where('tema_form_id', $id)->get();
-        return view('admin.konfigurasi.form.tema.variabel.index', compact('variabel', 'temaFormId'));
+        $variabel = VariabelForm::with('temaForm:id,tema,form_id', 'standarFotos')->where('tema_form_id', $id)->get();
+        $formId = $variabel->first()->temaForm->form_id ?? null;
+        return view('admin.konfigurasi.form.tema.variabel.index', compact('variabel', 'temaFormId', 'formId'));
     }
 
     public function addVariabelForm($id)

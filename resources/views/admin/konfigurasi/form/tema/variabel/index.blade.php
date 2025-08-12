@@ -4,7 +4,7 @@
 @section('content')
 <div class="container mx-auto p-4 min-h-screen">
     {{-- Tombol Kembali --}}
-    <a href="{{ route('tema-form', $temaFormId ?? '') }}" class="text-lg font-semibold flex items-center mb-4 w-fit">
+    <a href="{{ route('tema-form', $formId ?? '') }}" class="text-lg font-semibold flex items-center mb-4 w-fit">
         ← Kembali
     </a>
     {{-- <a href="{{ route('tema-form', $temaFormId ?? '') }}" class="text-lg font-semibold flex items-center mb-4 w-fit">
