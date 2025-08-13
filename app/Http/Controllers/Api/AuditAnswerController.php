@@ -40,6 +40,23 @@ class AuditAnswerController extends Controller
         ]);
     }
 
+    public function auditApprove($id)
+    {
+        $auditAnswerId = $id;
+        $auditAnswer = AuditAnswer::find($auditAnswerId);
+        if (!$auditAnswer) {
+            return response()->json(['message' => 'Audit answer tidak ditemukan'], 404);
+        }
+
+        $auditAnswer->status = 'approved';
+        $auditAnswer->save();
+
+        return response()->json([
+            'message' => 'Audit answer berhasil disetujui',
+            'audit_answer' => $auditAnswer
+        ]);
+    }
+
     public function store(Request $request)
     {
         // Validasi input
