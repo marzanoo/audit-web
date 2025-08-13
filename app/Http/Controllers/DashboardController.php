@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Area;
 use App\Models\AuditAnswer;
+use App\Models\EmployeeFine;
 use App\Models\Lantai;
 use App\Models\User;
 use App\Models\VariabelForm;
@@ -29,7 +30,10 @@ class DashboardController extends Controller
             return view('steerco.steerco-home', compact('total_audit'));
         } else if ($user->role == 3) {
             $total_audit = $this->totalAuditByAuditor();
-            return view('auditor.auditor-home', compact('total_area', 'total_audit'));
+            // Gunakan nik dari user sebagai emp_id
+            $empId = $user->nik;
+            $total_due = $empId ? EmployeeFine::getTotalDue($empId) : 0;
+            return view('auditor.auditor-home', compact('total_area', 'total_audit', 'total_due', 'empId'));
         } else {
             Auth::logout();
             return redirect()->route('login')->with(['login_error' => 'Role tidak ditemukan.']);

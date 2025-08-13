@@ -7,6 +7,7 @@ use App\Http\Controllers\AuditOfficeSteercoController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DetailAuditAnswerController;
+use App\Http\Controllers\FinePaymentController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\LantaiController;
 use App\Http\Controllers\PasswordResetController;
@@ -140,6 +141,8 @@ Route::middleware(('admin.or.approval.access'))->group(function () {
 Route::middleware(['auth:web', 'role:1,3'])->group(function () {
     Route::get('/audit-answer', [AuditAnswerController::class, 'showFormAudit'])->name('audit-answer');
     Route::post('/audit-answer-insert', [AuditAnswerController::class, 'store'])->name('audit-answer-insert');
+    Route::get('/auditor/fines/{empId}', [FinePaymentController::class, 'showFines'])->name('fines-show');
+    Route::post('/auditor/fines/pay/{empId}', [FinePaymentController::class, 'submitPayment'])->name('fines-pay');
 });
 
 //Detail Audit Answer

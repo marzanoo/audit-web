@@ -43,5 +43,18 @@
             <p class="text-2xl text-green-600 mt-3 font-semibold">{{ $total_audit }} Form telah diisi</p>
         </a>
     </div>
+    <div class="grid mt-4">
+        <div class="bg-gray-100 p-4 rounded-lg shadow-md text-center">
+            <h4 class="text-xl font-bold">Total Denda</h4>
+            <p class="text-2xl text-red-600 mt-3 font-semibold">Rp {{ number_format($total_due, 0, ',', '.') }}</p>
+            @if ($empId)
+                <a href="{{ route('fines-show', $empId) }}" class="mt-3 inline-block bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                    Detail Denda
+                </a>
+            @else
+                 <p class="text-sm text-gray-500 mt-3">Akun belum terkait dengan karyawan. Hubungi admin.</p>
+            @endif
+        </div>
+    </div>
 </div>
 @endsection

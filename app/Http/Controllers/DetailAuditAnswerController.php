@@ -8,7 +8,9 @@ use App\Models\DetailAuditeeAnswer;
 use App\Models\DetailFotoAuditAnswer;
 use App\Models\DetailFotoStandarVariabel;
 use App\Models\DetailSignatureAuditAnswer;
+use App\Models\EmployeeFine;
 use App\Models\Karyawan;
+use App\Models\PicArea;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -85,6 +87,7 @@ class DetailAuditAnswerController extends Controller
             $auditAnswer->save();
 
             $this->processSignatures($auditAnswerId, $request);
+            $this->saveFines($auditAnswerId); // Simpan denda setelah audit di submit
 
             $auditAnswer->sendEmailApproval();
 
@@ -176,6 +179,269 @@ class DetailAuditAnswerController extends Controller
                 'auditee_signature' => $signaturePaths['auditee_signature'] ?? null,
                 'facilitator_signature' => $signaturePaths['facilitator_signature'] ?? null
             ]);
+        }
+    }
+
+    private function getGrade($id)
+    {
+        $auditAnswer = AuditAnswer::where('id', $id)->first();
+        if ($auditAnswer->total_score <= 2) {
+            return "Diamond";
+        } elseif ($auditAnswer->total_score <= 4) {
+            return "Platinum";
+        } elseif ($auditAnswer->total_score <= 6) {
+            return "Gold";
+        } elseif ($auditAnswer->total_score <= 8) {
+            return "Silver";
+        } elseif ($auditAnswer->total_score >= 9) {
+            return "Bronze";
+        }
+        return "Unknown";
+    }
+
+    private function calculateAuditChargeFees($auditAnswerId)
+    {
+        $detailAuditAnswer = DetailAuditAnswer::where('audit_answer_id', $auditAnswerId)->get();
+        $grade = $this->getGrade($auditAnswerId);
+
+        $chargeFeeRates = [
+            'Diamond' => 0,
+            'Platinum' => 2000,
+            'Gold' => 4000,
+            'Silver' => 10000,
+            'Bronze' => 20000,
+        ];
+
+        $feeRate = $chargeFeeRates[$grade] ?? 0;
+        $tertuduhFees = [];
+        $tertuduhDetails = [];
+        $picAreaFee = 0;
+        $managerFees = [];
+        $managerDetails = [];
+        $gmFees = [];
+        $gmDetails = [];
+
+        $deptFindings = [];
+        $totalFindings = 0;
+
+        foreach ($detailAuditAnswer as $detail) {
+            $tertuduhEntries = DetailAuditeeAnswer::where('detail_audit_answer_id', $detail->id)->get();
+
+            foreach ($tertuduhEntries as $entry) {
+                $karyawan = null;
+                if ($entry->auditee) {
+                    $karyawan = Karyawan::find($entry->auditee);
+                }
+
+                $tertuduhName = $karyawan ? $karyawan->emp_name : $entry->auditee_name;
+                $tertuduhId = $entry->auditee;
+
+                if (empty($tertuduhName) || empty($entry->temuan)) {
+                    continue;
+                }
+
+                $findingCount = 1;
+                if (preg_match('/(\d+(?:\.\d+)?)/', $entry->temuan, $matches)) {
+                    $findingCount = (float) $matches[1];
+                }
+
+                $totalFindings += $findingCount;
+
+                $fee = $findingCount * $feeRate;
+
+                if (!isset($tertuduhFees[$tertuduhName])) {
+                    $tertuduhFees[$tertuduhName] = 0;
+                    $tertuduhDetails[$tertuduhName] = [
+                        'findings' => 0,
+                        'fee' => 0,
+                        'dept' => null
+                    ];
+                }
+                $tertuduhFees[$tertuduhName] += $fee;
+                $tertuduhDetails[$tertuduhName]['findings'] += $findingCount;
+                $tertuduhDetails[$tertuduhName]['fee'] += $fee;
+
+                if ($tertuduhId) {
+                    $employee = Karyawan::find($tertuduhId);
+                    if ($employee && $employee->dept) {
+                        $tertuduhDetails[$tertuduhName]['dept'] = $employee->dept;
+
+                        if (!isset($deptFindings[$employee->dept])) {
+                            $deptFindings[$employee->dept] = 0;
+                        }
+
+                        $deptFindings[$employee->dept] += $findingCount;
+                    }
+                }
+            }
+        }
+
+        $picAreaFee = $totalFindings * $feeRate * 0.5;
+
+        $gmDeptMap = [
+            'TSD' => 'ASD',
+            'PMD' => 'ASD',
+        ];
+
+        $gmFindingCount = [];
+
+        foreach ($deptFindings as $dept => $findingCount) {
+            if ($dept === 'MKT') {
+                for ($i = 1; $i <= 5; $i++) {
+                    $mktAuditeeRemark = "AUDITEE MKT $i";
+                    $mktManagerRemark = "MGR MKT $i";
+
+                    $mktEmployees = Karyawan::where('remarks', 'LIKE', "%$mktAuditeeRemark%")->pluck('emp_id')->toArray();
+                    $mktFindingCount = 0;
+
+                    foreach ($detailAuditAnswer as $detail) {
+                        $tertuduhEntries = DetailAuditeeAnswer::where('detail_audit_answer_id', $detail->id)
+                            ->whereIn('auditee', $mktEmployees)
+                            ->get();
+
+                        foreach ($tertuduhEntries as $entry) {
+                            if (empty($entry->temuan)) {
+                                continue;
+                            }
+
+                            $findingCount = 1;
+                            if (preg_match('/(\d+(?:\.\d+)?)/', $entry->temuan, $matches)) {
+                                $findingCount = (float) $matches[1];
+                            }
+                            $mktFindingCount += $findingCount;
+                        }
+                    }
+
+                    if ($mktFindingCount > 0) {
+                        $manager = Karyawan::where('remarks', 'LIKE', "%$mktManagerRemark%")->first();
+                        if ($manager) {
+                            $managerFee = $mktFindingCount * 1000;
+                            $managerFees[$manager->emp_name] = $managerFee;
+                            $managerDetails[$manager->emp_name] = [
+                                'dept' => "MKT $i",
+                                'findings' => $mktFindingCount,
+                                'fee' => $managerFee
+                            ];
+                        }
+                    }
+                }
+            } else {
+                $manager = Karyawan::where('remarks', 'LIKE', "%MGR $dept%")->first();
+                if ($manager) {
+                    $managerFee = $findingCount * 1000;
+                    $managerFees[$manager->emp_name] = $managerFee;
+                    $managerDetails[$manager->emp_name] = [
+                        'dept' => $dept,
+                        'findings' => $findingCount,
+                        'fee' => $managerFee
+                    ];
+                }
+            }
+
+            $targetDept = $gmDeptMap[$dept] ?? $dept;
+            if (!isset($gmFindingCount[$targetDept])) {
+                $gmFindingCount[$targetDept] = 0;
+            }
+            $gmFindingCount[$targetDept] += $findingCount;
+        }
+
+        foreach ($gmFindingCount as $gmDept => $findingCount) {
+            $gm = Karyawan::where('remarks', 'LIKE', "%GM $gmDept%")->first();
+            if ($gm) {
+                $gmFee = $findingCount * 2000;
+                $gmFees[$gm->emp_name] = $gmFee;
+                $gmDetails[$gm->emp_name] = [
+                    'dept' => $gmDept,
+                    'findings' => $findingCount,
+                    'fee' => $gmFee
+                ];
+            }
+        }
+
+        return [
+            'grade' => $grade,
+            'feeRate' => $feeRate,
+            'tertuduhFees' => $tertuduhFees,
+            'tertuduhDetails' => $tertuduhDetails,
+            'picAreaFee' => $picAreaFee,
+            'managerFees' => $managerFees,
+            'managerDetails' => $managerDetails,
+            'gmFees' => $gmFees,
+            'gmDetails' => $gmDetails,
+            'totalFindings' => $totalFindings,
+            'totalFee' => array_sum($tertuduhFees) + $picAreaFee + array_sum($managerFees) + array_sum($gmFees)
+        ];
+    }
+
+    private function saveFines($auditAnswerId)
+    {
+        $chargeFees = $this->calculateAuditChargeFees($auditAnswerId);
+
+        $detailAuditAnswer = DetailAuditAnswer::where('audit_answer_id', $auditAnswerId)->get();
+        foreach ($detailAuditAnswer as $detail) {
+            $tertuduhEntries = DetailAuditeeAnswer::where('detail_audit_answer_id', $detail->id)->get();
+            foreach ($tertuduhEntries as $entry) {
+                if (empty($entry->temuan)) continue;
+
+                $karyawan = $entry->auditee ? Karyawan::find($entry->auditee) : null;
+                $tertuduhName = $karyawan ? $karyawan->emp_name : $entry->auditee_name;
+                $empId = $entry->auditee;
+
+                $findingCount = 1;
+                if (preg_match('/(\d+(?:\.\d+)?)/', $entry->temuan, $matches)) {
+                    $findingCount = (float) $matches[1];
+                }
+
+                $fee = $findingCount * $chargeFees['feeRate'];
+
+                EmployeeFine::create([
+                    'emp_id' => $empId,
+                    'audit_answer_id' => $auditAnswerId,
+                    'detail_audit_answer_id' => $detail->id,
+                    'type' => 'fine',
+                    'amount' => $fee,
+                    'description' => "Denda tertuduh dari poin audit {$detail->id}, temuan {$entry->temuan}, grade {$chargeFees['grade']}"
+                ]);
+            }
+        }
+
+        $auditAnswer = AuditAnswer::find($auditAnswerId);
+        $picId = $auditAnswer->pic_area;
+        $empId = PicArea::where('id', $picId)->first()->pic_id ?? null;
+        if ($empId && $chargeFees['picAreaFee'] > 0) {
+            EmployeeFine::create([
+                'emp_id' => $empId,
+                'audit_answer_id' => $auditAnswerId,
+                'type' => 'fine',
+                'amount' => $chargeFees['picAreaFee'],
+                'description' => "Denda PIC Area dari audit {$auditAnswerId}, total findings {$chargeFees['totalFindings']}"
+            ]);
+        }
+
+        foreach ($chargeFees['managerDetails'] as $name => $details) {
+            $employee = Karyawan::where('emp_name', $name)->first();
+            if ($employee && $details['fee'] > 0) {
+                EmployeeFine::create([
+                    'emp_id' => $employee->emp_id,
+                    'audit_answer_id' => $auditAnswerId,
+                    'type' => 'fine',
+                    'amount' => $details['fee'],
+                    'description' => "Denda Manager dept {$details['dept']} dari audit {$auditAnswerId}, findings {$details['findings']}"
+                ]);
+            }
+        }
+
+        foreach ($chargeFees['gmDetails'] as $name => $details) {
+            $employee = Karyawan::where('emp_name', $name)->first();
+            if ($employee && $details['fee'] > 0) {
+                EmployeeFine::create([
+                    'emp_id' => $employee->emp_id,
+                    'audit_answer_id' => $auditAnswerId,
+                    'type' => 'fine',
+                    'amount' => $details['fee'],
+                    'description' => "Denda GM dept {$details['dept']} dari audit {$auditAnswerId}, findings {$details['findings']}"
+                ]);
+            }
         }
     }
 }
