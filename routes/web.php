@@ -165,3 +165,4 @@ Route::middleware(['auth:web', 'role:1,2'])->group(function () {
 });
 
 Route::middleware('approval.access')->get('/audit/approve/{id}', [AuditAnswerController::class, 'approve'])->name('audit-approve');
+Route::get('/approve-payment/{paymentId}', [FinePaymentController::class, 'approvePayment'])->name('approve.payment');

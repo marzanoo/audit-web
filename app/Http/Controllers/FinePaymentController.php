@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\PaymentApprovalMail;
 use App\Models\EmployeeFine;
 use App\Models\Karyawan;
+use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 class FinePaymentController extends Controller
@@ -60,32 +63,24 @@ class FinePaymentController extends Controller
                         'name' => 'language',
                         'contents' => 'eng',
                     ],
+                    [
+                        'name' => 'OCREngine',
+                        'contents' => '2',
+                    ],
                 ],
             ]);
 
             $result = json_decode($response->getBody(), true);
             $extractedText = $result['ParsedResults'][0]['ParsedText'] ?? '';
-
-            // Log untuk debugging
             Log::info('OCR Extracted Text: ' . $extractedText);
 
-            // Ekstrak amount
-            $extractedAmounts = [];
-            preg_match_all('/(?:Rp\s*)?(\d{1,3}(?:\.\d{3})*|\d+)/', $extractedText, $matches);
-            if (!empty($matches[1])) {
-                foreach ($matches[1] as $match) {
-                    $cleanAmount = (float) str_replace('.', '', $match);
-                    $extractedAmounts[] = $cleanAmount;
-                }
-            }
-            $extractedAmount = !empty($extractedAmounts) ? max($extractedAmounts) : 0;
+            // Cari pola seperti "Jumlah: 1.000.000", "Total: Rp 1.000.000", atau "Amount: Rp. 1000000"
+            preg_match('/(?:Jumlah|Total|Amount)[\s:]*Rp\.?\s*(\d{1,3}(?:\.\d{3})*)/i', $extractedText, $matches);
+            $extractedAmountRaw = !empty($matches[1]) ? $matches[1] : '';
+            $extractedAmount = (float) str_replace('.', '', $extractedAmountRaw);
             $inputAmount = (float) $request->amount;
 
-            if (abs($extractedAmount - $inputAmount) > 0.1) {
-                Storage::delete('public/' . $evidencePath);
-                return redirect()->back()->with('payment_error', 'Amount di evidence (' . $extractedAmount . ') tidak sesuai dengan input (' . $inputAmount . '). Silakan upload ulang.');
-            }
-
+            // Buat payment terlebih dahulu (akan diupdate statusnya nanti)
             $payment = EmployeeFine::create([
                 'emp_id' => $empId,
                 'type' => 'payment',
@@ -94,13 +89,57 @@ class FinePaymentController extends Controller
                 'evidence_path' => $evidencePath,
                 'payment_method' => 'cash',
                 'paid_at' => now(),
+                'status' => 'pending', // Default ke pending
             ]);
 
+            if ($extractedAmount === 0) {
+                // OCR gagal menemukan amount, kirim email untuk pengecekan manual
+                $this->sendApprovalEmail($payment);
+                return redirect()->back()->with('payment_pending', 'Pembayaran menunggu verifikasi karena OCR gagal membaca amount. Email telah dikirim ke bendahara.');
+            }
+
+            if (abs($extractedAmount - $inputAmount) > 0.1) {
+                // Amount tidak cocok, kirim email untuk pengecekan manual
+                $this->sendApprovalEmail($payment);
+                return redirect()->back()->with('payment_pending', 'Pembayaran menunggu verifikasi karena amount tidak cocok. Email telah dikirim ke bendahara.');
+            }
+
+            // Jika OCR berhasil, update status ke approved dan kurangi denda
+            $payment->update(['status' => 'paid']);
             return redirect()->back()->with('payment_success', 'Pembayaran berhasil.');
         } catch (\Exception $e) {
             Log::error('OCR Error: ' . $e->getMessage());
             Storage::delete('public/' . $evidencePath);
             return redirect()->back()->with('payment_error', 'Terjadi kesalahan saat memproses bukti pembayaran: ' . $e->getMessage());
         }
+    }
+
+    protected function sendApprovalEmail($payment)
+    {
+        $bendahara = Karyawan::where('emp_id', 2011060104)->first(); // Ganti dengan emp_id bendahara yang sesuai
+        if (!$bendahara) {
+            Log::error('Bendahara not found for approval email');
+            return;
+        }
+
+        $bendaharaEmail = $bendahara->email;
+        $bendaharaName = $bendahara->emp_name;
+
+        Mail::to($bendaharaEmail)->send(new PaymentApprovalMail(
+            $payment,
+            $bendaharaName
+        ));
+
+        Log::info('Approval email sent to ' . $bendaharaEmail);
+    }
+
+    public function approvePayment($paymentId)
+    {
+        $payment = EmployeeFine::findOrFail($paymentId);
+        if ($payment->status === 'pending') {
+            $payment->update(['status' => 'paid']);
+            return view('payments.success')->with('payment_success', 'Pembayaran berhasil disetujui.');
+        }
+        return redirect()->back()->with('payment_error', 'Pembayaran sudah disetujui sebelumnya.');
     }
 }

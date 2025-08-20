@@ -3,6 +3,9 @@
 
 @section('content')
 <div class="container mx-auto p-4">
+    <a href="{{ route('dashboard') }}" class="text-lg font-semibold flex items-center mb-4 w-fit">
+        ← Kembali
+    </a>
     @if (session('payment_success'))
         <div class="bg-green-500 text-white p-4 rounded-lg mb-4">
             {{ session('payment_success') }}
@@ -11,6 +14,11 @@
     @if (session('payment_error'))
         <div class="bg-red-500 text-white p-4 rounded-lg mb-4">
             {{ session('payment_error') }}
+        </div>
+    @endif
+    @if (session('payment_pending'))
+        <div class="bg-red-500 text-white p-4 rounded-lg mb-4">
+            {{ session('payment_pending') }}
         </div>
     @endif
 

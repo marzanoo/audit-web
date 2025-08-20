@@ -20,7 +20,8 @@ class EmployeeFine extends Model
         'description',
         'evidence_path',
         'payment_method',
-        'paid_at'
+        'paid_at',
+        'status',
     ];
 
     protected $casts = [
@@ -55,6 +56,7 @@ class EmployeeFine extends Model
     {
         return self::where('emp_id', $empId)
             ->where('type', 'payment')
+            ->where('status', 'paid')
             ->sum('amount');
     }
 
