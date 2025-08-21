@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AuditAnswerController;
 use App\Http\Controllers\Api\AuditOfficeAdminController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DetailAuditAnswerController;
+use App\Http\Controllers\Api\FinePaymentController;
 use App\Http\Controllers\Api\FormController;
 use App\Http\Controllers\Api\KaryawanController;
 use App\Http\Controllers\Api\LantaiController;
@@ -110,6 +111,13 @@ Route::middleware('auth:api')->get('/user/{id}', [UserController::class, 'show']
 Route::middleware('auth:api')->post('/user', [UserController::class, 'store']);
 Route::middleware('auth:api')->put('/user/{id}', [UserController::class, 'update']);
 Route::middleware('auth:api')->delete('user/{id}', [UserController::class, 'destroy']);
+
+//Payment
+Route::middleware('auth:api')->prefix('payment')->group(function () {
+    Route::get('/fines/{empId}', [FinePaymentController::class, 'showFines']);
+    Route::post('/fines/{empId}/submit', [FinePaymentController::class, 'submitPayment']);
+    Route::get('/fines/{empId}/approve', [FinePaymentController::class, 'approvePayment']);
+});
 
 Route::get('/karyawan/{nik}', function ($nik) {
     $karyawan = Karyawan::where('emp_id', $nik)->first();

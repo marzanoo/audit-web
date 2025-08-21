@@ -48,6 +48,11 @@ class AuditAnswerController extends Controller
             return response()->json(['message' => 'Audit answer tidak ditemukan'], 404);
         }
 
+        if ($auditAnswer->status === 'approved') {
+            return response()->json(['message' => 'Audit answer sudah disetujui'], 400);
+        }
+
+        // Set status to approved
         $auditAnswer->status = 'approved';
         $auditAnswer->save();
 

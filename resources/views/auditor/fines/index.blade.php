@@ -47,6 +47,15 @@
                 @else
                     <span class="text-sm text-gray-500">-</span>
                 @endif
+                @if ($fine->type == 'payment')
+                    <p class="text-sm text-gray-600 mt-2">Status:
+                        @if ($fine->status == 'pending')
+                            <span class="text-yellow-500 font-semibold">Pending</span>
+                        @elseif ($fine->status == 'paid')
+                            <span class="text-green-500 font-semibold">Berhasil</span>
+                        @endif
+                    </p>
+                @endif
             </div>
         @empty
             <p class="text-gray-500 text-center">Belum ada transaksi.</p>
