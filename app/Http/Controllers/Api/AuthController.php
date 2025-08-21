@@ -60,6 +60,7 @@ class AuthController extends Controller
             'email' => $user->email,
             'name' => $user->name,
             'id' => $user->id,
+            'nik' => $user->nik,
             'message' => 'Login berhasil',
             'success' => true
         ], 200);
