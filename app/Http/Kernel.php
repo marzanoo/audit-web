@@ -72,5 +72,6 @@ class Kernel extends HttpKernel
         'role' => \App\Http\Middleware\RestrictToRole::class,
         'approval.access' => \App\Http\Middleware\ApprovalAccess::class,
         'admin.or.approval.access' => \App\Http\Middleware\AdminOrApprovalAccess::class,
+        'bendahara.access' => \App\Http\Middleware\BendaharaAccess::class,
     ];
 }

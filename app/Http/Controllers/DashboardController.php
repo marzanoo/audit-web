@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Area;
 use App\Models\AuditAnswer;
 use App\Models\EmployeeFine;
+use App\Models\Karyawan;
 use App\Models\Lantai;
 use App\Models\User;
 use App\Models\VariabelForm;
@@ -21,7 +22,6 @@ class DashboardController extends Controller
         }
 
         $user = auth()->user();
-
         if ($user->role == 1) {
             $total_audit = $this->totalAudit();
             return view('admin.admin-home', compact('total_audit'));
@@ -33,7 +33,8 @@ class DashboardController extends Controller
             // Gunakan nik dari user sebagai emp_id
             $empId = $user->nik;
             $total_due = $empId ? EmployeeFine::getTotalDue($empId) : 0;
-            return view('auditor.auditor-home', compact('total_area', 'total_audit', 'total_due', 'empId'));
+            $bendahara = Karyawan::where('emp_id', 2011060104)->first();
+            return view('auditor.auditor-home', compact('total_area', 'total_audit', 'total_due', 'empId', 'bendahara'));
         } else {
             Auth::logout();
             return redirect()->route('login')->with(['login_error' => 'Role tidak ditemukan.']);

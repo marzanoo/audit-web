@@ -141,8 +141,14 @@ Route::middleware(('admin.or.approval.access'))->group(function () {
 Route::middleware(['auth:web', 'role:1,3'])->group(function () {
     Route::get('/audit-answer', [AuditAnswerController::class, 'showFormAudit'])->name('audit-answer');
     Route::post('/audit-answer-insert', [AuditAnswerController::class, 'store'])->name('audit-answer-insert');
-    Route::get('/auditor/fines/{empId}', [FinePaymentController::class, 'showFines'])->name('fines-show');
-    Route::post('/auditor/fines/pay/{empId}', [FinePaymentController::class, 'submitPayment'])->name('fines-pay');
+    // Route::get('/auditor/fines/{empId}', [FinePaymentController::class, 'showFines'])->name('fines-show');
+    // Route::post('/auditor/fines/pay/{empId}', [FinePaymentController::class, 'submitPayment'])->name('fines-pay');
+});
+
+//Payment Fines
+Route::middleware(['auth:web', 'role:1,3', 'bendahara.access:2011060104'])->group(function () {
+    Route::get('/payment-fines', [FinePaymentController::class, 'index'])->name('payment-fines');
+    Route::post('/payment-fines/submit', [FinePaymentController::class, 'paymentSubmit'])->name('payment-fines-submit');
 });
 
 //Detail Audit Answer

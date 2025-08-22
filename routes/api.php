@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\PicAreaController;
 use App\Http\Controllers\Api\TemaFormController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VariabelFormController;
+use App\Http\Controllers\FinePaymentController as ControllersFinePaymentController;
 use App\Models\Karyawan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -118,7 +119,12 @@ Route::middleware('auth:api')->prefix('payment')->group(function () {
     Route::post('/fines/{empId}/submit', [FinePaymentController::class, 'submitPayment']);
     Route::get('/fines/{empId}/approve', [FinePaymentController::class, 'approvePayment']);
 });
+//Bendahara Payment
+Route::middleware(['auth:api', 'bendahara.access:2011060104'])->prefix('payment')->group(function () {
+    Route::post('/payment-fines/submit', [ControllersFinePaymentController::class, 'paymentSubmit']);
+});
 
+//Karyawan API
 Route::get('/karyawan/{nik}', function ($nik) {
     $karyawan = Karyawan::where('emp_id', $nik)->first();
     if (!$karyawan) {
@@ -126,6 +132,8 @@ Route::get('/karyawan/{nik}', function ($nik) {
     }
     return response()->json($karyawan);
 });
+
+Route::get('/search-karyawan', [KaryawanController::class, 'search']);
 // Route::get('/aktivasi-berhasil', [AuthController::class, 'index'])->name('aktivasi-berhasil');
 
 
