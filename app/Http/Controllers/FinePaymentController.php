@@ -26,7 +26,7 @@ class FinePaymentController extends Controller
             'amount' => 'required|numeric|min:1',
             'name' => 'required|string|max:255',
         ]);
-        $karyawan = Karyawan::where('emp_name', $request->name)->firstOrFail();
+        $karyawan = Karyawan::where('emp_name', 'like', "%$request->name%")->firstOrFail();
         $empId = $karyawan->emp_id;
         $totalDue = EmployeeFine::getTotalDue($empId);
         if ($request->amount > $totalDue) {
