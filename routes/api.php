@@ -119,8 +119,9 @@ Route::middleware('auth:api')->prefix('payment')->group(function () {
     Route::post('/fines/{empId}/submit', [FinePaymentController::class, 'submitPayment']);
     Route::get('/fines/{empId}/approve', [FinePaymentController::class, 'approvePayment']);
 });
+
 //Bendahara Payment
-Route::middleware(['auth:api', 'bendahara.access:2011060104'])->prefix('api/payment')->group(function () {
+Route::middleware(['auth:api', 'bendahara.access:2011060104'])->group(function () {
     Route::post('/payment-fines/submit', [ControllersFinePaymentController::class, 'paymentSubmit']);
 });
 
