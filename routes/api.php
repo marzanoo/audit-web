@@ -121,7 +121,7 @@ Route::middleware('auth:api')->prefix('payment')->group(function () {
 });
 
 //Bendahara Payment
-Route::middleware(['auth:api', 'bendahara.access:2011060104'])->group(function () {
+Route::middleware(['auth:api'])->group(function () {
     Route::post('/payment-fines/submit', [ControllersFinePaymentController::class, 'paymentSubmit']);
 });
 

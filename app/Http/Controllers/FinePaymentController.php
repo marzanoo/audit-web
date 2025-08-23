@@ -62,7 +62,7 @@ class FinePaymentController extends Controller
 
             $this->sendPaymentEmail($payment);
 
-            return redirect()->route('dashboard')->with(['fine_payment_success' => 'Pembayaran berhasil.']);
+            return redirect()->route('payment-fines')->with(['fine_payment_success' => 'Pembayaran berhasil.']);
         } catch (\Exception $e) {
             Log::error('Payment submission failed', [
                 'error' => $e->getMessage(),
