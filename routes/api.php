@@ -121,8 +121,8 @@ Route::middleware('auth:api')->prefix('payment')->group(function () {
 });
 
 //Bendahara Payment
-Route::middleware(['auth:api'])->group(function () {
-    Route::post('/payment-fines/submit', [ControllersFinePaymentController::class, 'paymentSubmit']);
+Route::middleware(['auth:api', 'bendahara.access:2011060104'])->group(function () {
+    Route::post('/payment-fines/submit', [FinePaymentController::class, 'paymentSubmit']);
 });
 
 //Karyawan API
