@@ -35,7 +35,7 @@
                             <p class="text-gray-600 mb-2">
                                 <strong>Standar:</strong> {{ $detail['standar_variabel'] }}
                             </p>
-                            @if (count ($detail['standar_foto_list']) > 0)
+                            @if (count($detail['standar_foto_list']) > 0)
                                 <div class="mt-3 mb-4">
                                     <h5 class="text-md font-medium text-gray-700 mb-2">Foto Standar:</h5>
                                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -98,7 +98,7 @@
                         <div id="data-list-{{ $detail['id'] }}" class="mt-4 space-y-2"></div>
                                      
                         <div class="mb-2 mt-4">
-                            <label for="text-lg font-semibold w-1/3">Score</label>
+                            <label class="text-lg font-semibold w-1/3">Score</label>
                             <input type="number" name="score[{{ $detail['id'] }}]" id="inputScore-{{ $detail['id'] }}" value="0" readonly class="score-input px-2 font-medium text-md border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>                        
                     </div>
@@ -170,149 +170,15 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 <script>
-    function saveFormData(detailId) {
-        const dataList = document.getElementById(`data-list-${detailId}`);
-        const tertuduhItems = dataList.querySelectorAll('div[data-entry-id]');
-        const tertuduhData = [];
+// Definisi signatureContainers di cakupan global
+const signatureContainers = {
+    'auditor': null,
+    'auditee': null,
+    'facilitator': null
+};
 
-        const tertuduhInputs = document.querySelectorAll(`input[name="tertuduh_${detailId}[]"]`);
-        const temuanInputs = document.querySelectorAll(`input[name="temuan_${detailId}[]"]`);
-
-        tertuduhItems.forEach((item, index) => {
-            const entryId = item.dataset.entryId;
-            const tertuduh = tertuduhInputs[index]?.value || '';
-            const temuan = temuanInputs[index]?.value || '';
-            tertuduhData.push({ entryId, tertuduh, temuan });
-        });
-
-        const images = [];
-        const imagePreviews = document.getElementById(`image-preview-container-${detailId}`).querySelectorAll('img');
-        imagePreviews.forEach((img, index) => {
-            images.push({ src: img.src, fileId: img.parentElement.dataset.fileId });
-        });
-
-        const formData = {
-            tertuduhData,
-            images,
-            score: document.getElementById(`inputScore-${detailId}`).value
-        };
-
-        localStorage.setItem(`auditForm_${detailId}`, JSON.stringify(formData));
-    }
-
-    function restoreFormData(detailId) {
-        const savedData = localStorage.getItem(`auditForm_${detailId}`);
-        if (!savedData) return;
-
-        const formData = JSON.parse(savedData);
-        const dataList = document.getElementById(`data-list-${detailId}`);
-        const previewContainer = document.getElementById(`image-preview-container-${detailId}`);
-
-        // Pulihkan data tertuduh dan temuan
-        formData.tertuduhData.forEach(data => {
-            const dataItem = document.createElement('div');
-            dataItem.className = 'flex justify-between items-center bg-gray-100 p-2 rounded-lg shadow-sm';
-            dataItem.dataset.entryId = data.entryId;
-
-            const temuanValue = data.temuan !== '' ? parseInt(data.temuan, 10) : 0;
-            dataItem.innerHTML = `
-                <span class="text-gray-700">${data.tertuduh || '(Tanpa Nama)'} - Temuan: ${temuanValue}</span>
-                <button type="button" onclick="hapusTertuduh(this, ${temuanValue}, '${detailId}', '${data.entryId}')" class="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-700">Hapus</button>
-            `;
-
-            const form = document.getElementById('auditForm');
-            const newTertuduhInput = document.createElement('input');
-            newTertuduhInput.type = 'hidden';
-            newTertuduhInput.name = `tertuduh_${detailId}[]`;
-            newTertuduhInput.value = data.tertuduh;
-            newTertuduhInput.dataset.entryId = data.entryId;
-            form.appendChild(newTertuduhInput);
-
-            const newTemuanInput = document.createElement('input');
-            newTemuanInput.type = 'hidden';
-            newTemuanInput.name = `temuan_${detailId}[]`;
-            newTemuanInput.value = data.temuan;
-            newTemuanInput.dataset.entryId = data.entryId;
-            form.appendChild(newTemuanInput);
-
-            dataList.appendChild(dataItem);
-        });
-
-        // Pulihkan preview gambar dengan pemberitahuan konfirmasi
-        if (formData.images.length > 0) {
-            const confirmContainer = document.createElement('div');
-            confirmContainer.className = 'flex justify-between items-center bg-yellow-100 p-3 rounded-lg mb-4';
-            confirmContainer.innerHTML = `
-                <span class="text-yellow-700 text-sm">Gambar dipulihkan dari sesi sebelumnya. Konfirmasi untuk menggunakan atau ambil ulang.</span>
-                <button type="button" onclick="confirmImages('${detailId}')" class="bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600">Gunakan Gambar</button>
-            `;
-            previewContainer.parentNode.insertBefore(confirmContainer, previewContainer);
-
-            formData.images.forEach((image, index) => {
-                const imageWrapper = document.createElement('div');
-                imageWrapper.className = 'relative';
-                imageWrapper.dataset.fileId = image.fileId;
-
-                const img = document.createElement('img');
-                img.src = image.src;
-                img.className = 'w-32 h-32 object-cover rounded-lg shadow-md cursor-pointer hover:opacity-80 transition-opacity hover:scale-105';
-                img.onclick = function() {
-                    openModal(image.src, `Foto Temuan ${index + 1}`);
-                };
-
-                const deleteButton = document.createElement('button');
-                deleteButton.innerHTML = '×';
-                deleteButton.className = 'absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600';
-                deleteButton.type = 'button';
-                deleteButton.onclick = function() {
-                    previewContainer.removeChild(imageWrapper);
-                    saveFormData(detailId);
-                };
-
-                imageWrapper.appendChild(img);
-                imageWrapper.appendChild(deleteButton);
-                previewContainer.appendChild(imageWrapper);
-            });
-        }
-
-        // Pulihkan score
-        totalScore[detailId] = parseInt(formData.score, 10) || 0;
-        document.getElementById(`inputScore-${detailId}`).value = totalScore[detailId];
-    }
-
-    function confirmImages(detailId) {
-        const savedData = localStorage.getItem(`auditForm_${detailId}`);
-        if (!savedData) return;
-
-        const formData = JSON.parse(savedData);
-        const previewContainer = document.getElementById(`image-preview-container-${detailId}`);
-        const form = document.getElementById('auditForm');
-
-        formData.images.forEach(image => {
-            fetch(image.src)
-                .then(res => res.blob())
-                .then(blob => {
-                    const file = new File([blob], `image_${image.fileId}.png`, { type: 'image/png' });
-                    const hiddenInput = document.createElement('input');
-                    hiddenInput.type = 'file';
-                    hiddenInput.name = `image_path_${detailId}[]`;
-                    hiddenInput.className = 'hidden';
-                    hiddenInput.dataset.fileId = image.fileId;
-
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    hiddenInput.files = dataTransfer.files;
-
-                    const imageWrapper = previewContainer.querySelector(`[data-file-id="${image.fileId}"]`);
-                    imageWrapper.appendChild(hiddenInput);
-
-                    const confirmContainer = previewContainer.parentNode.querySelector('.flex.justify-between.items-center');
-                    if (confirmContainer) confirmContainer.remove();
-                });
-        });
-    }
-
-    function openModal(imageSrc, caption) {
+function openModal(imageSrc, caption) {
+    try {
         const modal = document.getElementById('imageModal');
         const modalImage = document.getElementById('modalImage');
         const modalCaption = document.getElementById('modalCaption');
@@ -323,216 +189,34 @@
         modal.classList.add('flex');
         
         document.body.style.overflow = 'hidden';
+    } catch (error) {
+        console.error('Error in openModal:', error);
     }
+}
 
-    function closeModal() {
+function closeModal() {
+    try {
         const modal = document.getElementById('imageModal');
         modal.classList.add('hidden');
         modal.classList.remove('flex');
         
         document.body.style.overflow = 'auto';
+    } catch (error) {
+        console.error('Error in closeModal:', error);
     }
+}
 
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            closeModal();
-        }
-    });
-
-    document.getElementById('imageModal').addEventListener('click', function(event) {
-        if (event.target === this) {
-            closeModal();
-        }
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const signatureContainers = {
-            'auditor': document.getElementById('auditorSignatureCanvas'),
-            'auditee': document.getElementById('auditeeSignatureCanvas'),
-            'facilitator': document.getElementById('facilitatorSignatureCanvas')
-        };
-
-        const clearButtons = {
-            'auditor': document.getElementById('clearAuditorSignature'),
-            'auditee': document.getElementById('clearAuditeeSignature'),
-            'facilitator': document.getElementById('clearFacilitatorSignature')
-        };
-
-        const submitButton = document.querySelector('button[type="submit"]');
-
-        const signatureModalHTML = `
-            <div id="signatureModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div class="bg-white rounded-lg p-6 w-11/12 max-w-md">
-                    <h3 class="text-xl font-semibold mb-4">Tanda Tangan</h3>
-                    <canvas id="modalSignatureCanvas" class="border w-full" width="400" height="200"></canvas>
-                    <div class="flex justify-between mt-4">
-                        <button id="clearModalSignature" class="bg-gray-300 text-black px-4 py-2 rounded">Hapus</button>
-                        <div>
-                            <button id="cancelModalSignature" class="bg-red-500 text-white px-4 py-2 rounded mr-2">Batal</button>
-                            <button id="saveModalSignature" class="bg-green-500 text-white px-4 py-2 rounded">Simpan</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        let currentSignatureType = null;
-        let signaturePad = null;
-
-        function initSignaturePad(canvas) {
-            return new SignaturePad(canvas, {
-                minWidth: 1,
-                maxWidth: 3,
-                penColor: "black"
-            });
-        }
-
-        function openSignatureModal(type) {
-            document.body.insertAdjacentHTML('beforeend', signatureModalHTML);
-            const modalCanvas = document.getElementById('modalSignatureCanvas');
-            signaturePad = initSignaturePad(modalCanvas);
-            currentSignatureType = type;
-
-            document.getElementById('clearModalSignature').addEventListener('click', () => {
-                signaturePad.clear();
-            });
-
-            document.getElementById('cancelModalSignature').addEventListener('click', closeSignatureModal);
-
-            document.getElementById('saveModalSignature').addEventListener('click', saveSignature);
-        }
-
-        function closeSignatureModal() {
-            document.getElementById('signatureModal').remove();
-            signaturePad = null;
-            currentSignatureType = null;
-        }
-
-        function saveSignature() {
-            if (!signaturePad.isEmpty()) {
-                const signatureImage = signaturePad.toDataURL('image/png');
-                
-                fetch(signatureImage)
-                    .then(res => res.blob())
-                    .then(blob => {
-                        const file = new File([blob], `${currentSignatureType}_signature.png`, { type: 'image/png' });
-                        const fileInput = document.getElementById(`${currentSignatureType}SignatureInput`);
-                        
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(file);
-                        fileInput.files = dataTransfer.files;
-                        
-                        const targetCanvas = signatureContainers[currentSignatureType];
-                        const ctx = targetCanvas.getContext('2d');
-                        
-                        ctx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
-                        const img = new Image();
-                        img.onload = function() {
-                            ctx.drawImage(img, 0, 0, targetCanvas.width, targetCanvas.height);
-                            targetCanvas.setAttribute('data-signed', 'true');
-                            checkAllSignatures();
-                            
-                            localStorage.setItem(`signature_${currentSignatureType}`, signatureImage);
-                        };
-                        img.src = signatureImage;
-                        
-                        closeSignatureModal();
-                    });
-            }
-        }
-
-        function checkAllSignatures() {
-            const allSigned = Object.values(signatureContainers).every(
-                canvas => canvas.getAttribute('data-signed') === 'true'
-            );
-            submitButton.disabled = !allSigned;
-        }
-
-        function restoreSignatures() {
-            Object.keys(signatureContainers).forEach(type => {
-                const savedSignature = localStorage.getItem(`signature_${type}`);
-                if (savedSignature) {
-                    const canvas = signatureContainers[type];
-                    const ctx = canvas.getContext('2d');
-                    const img = new Image();
-                    img.onload = function() {
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        canvas.setAttribute('data-signed', 'true');
-                        checkAllSignatures();
-                    };
-                    img.src = savedSignature;
-                }
-            });
-        }
-
-        submitButton.disabled = true;
-
-        Object.keys(signatureContainers).forEach(type => {
-            signatureContainers[type].addEventListener('click', () => openSignatureModal(type));
-            clearButtons[type].addEventListener('click', () => {
-                const canvas = signatureContainers[type];
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                canvas.removeAttribute('data-signed');
-                localStorage.removeItem(`signature_${type}`);
-                checkAllSignatures();
-            });
-        });
-
-        // Pulihkan data untuk setiap detailId
-        document.querySelectorAll('[data-detail-id]').forEach(section => {
-            const detailId = section.getAttribute('data-detail-id');
-            totalScore[detailId] = 0; // Inisialisasi totalScore
-            restoreFormData(detailId);
-        });
-
-        restoreSignatures();
-
-        document.querySelectorAll('[id^="tertuduh-"], [id^="temuan-"]').forEach(input => {
-            input.addEventListener('input', () => {
-                const detailId = input.id.split('-')[1];
-                saveFormData(detailId);
-            });
-        });
-    });
-
-    let totalScore = {};
-
-    document.getElementById('auditForm').addEventListener('submit', function(event) {
-        let hasUnconfirmedImages = false;
-        document.querySelectorAll('[data-detail-id]').forEach(section => {
-            const detailId = section.getAttribute('data-detail-id');
-            const previewContainer = document.getElementById(`image-preview-container-${detailId}`);
-            const confirmContainer = previewContainer.parentNode.querySelector('.flex.justify-between.items-center');
-
-            if (confirmContainer) {
-                hasUnconfirmedImages = true;
-            }
-        });
-
-        if (hasUnconfirmedImages) {
-            event.preventDefault();
-            alert('Harap konfirmasi semua gambar yang dipulihkan atau ambil ulang foto.');
-            return;
-        }
-
-        // Hapus data dari localStorage setelah submit
-        document.querySelectorAll('[data-detail-id]').forEach(section => {
-            const detailId = section.getAttribute('data-detail-id');
-            localStorage.removeItem(`auditForm_${detailId}`);
-        });
-
-        Object.keys(signatureContainers).forEach(type => {
-            localStorage.removeItem(`signature_${type}`);
-        });
-    });
-
-    function tambahTertuduh(detailId) {
+function tambahTertuduh(detailId) {
+    try {
         const tertuduhInput = document.getElementById(`tertuduh-${detailId}`);
         const temuanInput = document.getElementById(`temuan-${detailId}`);
         const dataList = document.getElementById(`data-list-${detailId}`);
         const inputScore = document.getElementById(`inputScore-${detailId}`);
         
+        if (!tertuduhInput || !temuanInput || !dataList || !inputScore) {
+            throw new Error('Required DOM elements not found');
+        }
+
         const tertuduh = tertuduhInput.value.trim();
         const temuan = temuanInput.value.trim();
         
@@ -577,22 +261,29 @@
         
         tertuduhInput.value = "";
         temuanInput.value = "";
-        
-        saveFormData(detailId);
+    } catch (error) {
+        console.error(`Error in tambahTertuduh for detailId ${detailId}:`, error);
     }
+}
 
-    function hapusTertuduh(button, temuanValue, detailId, entryId) {
+function hapusTertuduh(button, temuanValue, detailId, entryId) {
+    try {
         button.parentElement.remove();
-        document.querySelector(`input[name="tertuduh_${detailId}[]"][data-entry-id="${entryId}"]`).remove();
-        document.querySelector(`input[name="temuan_${detailId}[]"][data-entry-id="${entryId}"]`).remove();
+        const tertuduhInput = document.querySelector(`input[name="tertuduh_${detailId}[]"][data-entry-id="${entryId}"]`);
+        const temuanInput = document.querySelector(`input[name="temuan_${detailId}[]"][data-entry-id="${entryId}"]`);
+        if (tertuduhInput) tertuduhInput.remove();
+        if (temuanInput) temuanInput.remove();
         
         totalScore[detailId] = (totalScore[detailId] || 0) - temuanValue;
-        document.getElementById(`inputScore-${detailId}`).value = totalScore[detailId];
-        
-        saveFormData(detailId);
+        const inputScore = document.getElementById(`inputScore-${detailId}`);
+        if (inputScore) inputScore.value = totalScore[detailId];
+    } catch (error) {
+        console.error(`Error in hapusTertuduh for detailId ${detailId}:`, error);
     }
+}
 
-    function handleFileSelect(event, detailId) {
+function handleFileSelect(event, detailId) {
+    try {
         const files = event.target.files;
         const previewContainer = document.getElementById(`image-preview-container-${detailId}`);
         let imageCounter = previewContainer.querySelectorAll('img').length + 1;
@@ -605,6 +296,7 @@
             reader.onload = function(e) {
                 const imageWrapper = document.createElement('div');
                 imageWrapper.className = 'relative';
+                imageWrapper.dataset.fileId = fileId;
 
                 const image = document.createElement('img');
                 image.src = e.target.result;
@@ -632,7 +324,6 @@
                     previewContainer.removeChild(imageWrapper);
                     hiddenInput.remove();
                     imageCounter--;
-                    saveFormData(detailId);
                 };
 
                 imageWrapper.appendChild(image);
@@ -640,17 +331,179 @@
                 imageWrapper.appendChild(hiddenInput);
                 previewContainer.appendChild(imageWrapper);
                 imageCounter++;
-
-                saveFormData(detailId);
             };
 
             reader.readAsDataURL(file);
         }
 
         event.target.value = "";
+    } catch (error) {
+        console.error(`Error in handleFileSelect for detailId ${detailId}:`, error);
     }
+}
+
+let totalScore = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Inisialisasi signatureContainers
+    signatureContainers.auditor = document.getElementById('auditorSignatureCanvas');
+    signatureContainers.auditee = document.getElementById('auditeeSignatureCanvas');
+    signatureContainers.facilitator = document.getElementById('facilitatorSignatureCanvas');
+
+    const clearButtons = {
+        'auditor': document.getElementById('clearAuditorSignature'),
+        'auditee': document.getElementById('clearAuditeeSignature'),
+        'facilitator': document.getElementById('clearFacilitatorSignature')
+    };
+
+    const submitButton = document.querySelector('button[type="submit"]');
+
+    const signatureModalHTML = `
+        <div id="signatureModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div class="bg-white rounded-lg p-6 w-11/12 max-w-md">
+                <h3 class="text-xl font-semibold mb-4">Tanda Tangan</h3>
+                <canvas id="modalSignatureCanvas" class="border w-full" width="400" height="200"></canvas>
+                <div class="flex justify-between mt-4">
+                    <button id="clearModalSignature" class="bg-gray-300 text-black px-4 py-2 rounded">Hapus</button>
+                    <div>
+                        <button id="cancelModalSignature" class="bg-red-500 text-white px-4 py-2 rounded mr-2">Batal</button>
+                        <button id="saveModalSignature" class="bg-green-500 text-white px-4 py-2 rounded">Simpan</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    let currentSignatureType = null;
+    let signaturePad = null;
+
+    function initSignaturePad(canvas) {
+        return new SignaturePad(canvas, {
+            minWidth: 1,
+            maxWidth: 3,
+            penColor: "black"
+        });
+    }
+
+    function openSignatureModal(type) {
+        try {
+            document.body.insertAdjacentHTML('beforeend', signatureModalHTML);
+            const modalCanvas = document.getElementById('modalSignatureCanvas');
+            signaturePad = initSignaturePad(modalCanvas);
+            currentSignatureType = type;
+
+            document.getElementById('clearModalSignature').addEventListener('click', () => {
+                signaturePad.clear();
+            });
+
+            document.getElementById('cancelModalSignature').addEventListener('click', closeSignatureModal);
+
+            document.getElementById('saveModalSignature').addEventListener('click', saveSignature);
+        } catch (error) {
+            console.error('Error in openSignatureModal:', error);
+        }
+    }
+
+    function closeSignatureModal() {
+        try {
+            document.getElementById('signatureModal').remove();
+            signaturePad = null;
+            currentSignatureType = null;
+        } catch (error) {
+            console.error('Error in closeSignatureModal:', error);
+        }
+    }
+
+    function saveSignature() {
+        try {
+            if (!signaturePad.isEmpty()) {
+                const signatureImage = signaturePad.toDataURL('image/png');
+                
+                fetch(signatureImage)
+                    .then(res => {
+                        if (!res.ok) throw new Error(`Failed to fetch signature: ${res.status}`);
+                        return res.blob();
+                    })
+                    .then(blob => {
+                        const file = new File([blob], `${currentSignatureType}_signature.png`, { type: 'image/png' });
+                        const fileInput = document.getElementById(`${currentSignatureType}SignatureInput`);
+                        
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        fileInput.files = dataTransfer.files;
+                        
+                        const targetCanvas = signatureContainers[currentSignatureType];
+                        const ctx = targetCanvas.getContext('2d');
+                        
+                        ctx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+                        const img = new Image();
+                        img.onload = function() {
+                            ctx.drawImage(img, 0, 0, targetCanvas.width, targetCanvas.height);
+                            targetCanvas.setAttribute('data-signed', 'true');
+                            checkAllSignatures();
+                        };
+                        img.src = signatureImage;
+                        
+                        closeSignatureModal();
+                    })
+                    .catch(error => console.error('Error in saveSignature:', error));
+            }
+        } catch (error) {
+            console.error('Error in saveSignature:', error);
+        }
+    }
+
+    function checkAllSignatures() {
+        try {
+            const allSigned = Object.values(signatureContainers).every(canvas => {
+                if (!canvas) {
+                    console.warn(`Canvas for signature is null`);
+                    return false;
+                }
+                const isSigned = canvas.getAttribute('data-signed') === 'true';
+                console.log(`Canvas ${canvas.id} signed: ${isSigned}`);
+                return isSigned;
+            });
+            submitButton.disabled = !allSigned;
+            console.log(`Submit button enabled: ${!submitButton.disabled}`);
+        } catch (error) {
+            console.error('Error in checkAllSignatures:', error);
+        }
+    }
+
+    submitButton.disabled = true;
+
+    Object.keys(signatureContainers).forEach(type => {
+        if (signatureContainers[type]) {
+            signatureContainers[type].addEventListener('click', () => openSignatureModal(type));
+            clearButtons[type].addEventListener('click', () => {
+                const canvas = signatureContainers[type];
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                canvas.removeAttribute('data-signed');
+                checkAllSignatures();
+            });
+        }
+    });
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeModal();
+        }
+    });
+
+    document.getElementById('imageModal').addEventListener('click', function(event) {
+        if (event.target === this) {
+            closeModal();
+        }
+    });
+
+    // Inisialisasi totalScore untuk setiap detailId
+    document.querySelectorAll('[data-detail-id]').forEach(section => {
+        const detailId = section.getAttribute('data-detail-id');
+        totalScore[detailId] = 0;
+    });
+});
 </script>
 @endpush
 @endsection
-
-{{-- Masih ada masalah dibagian submit (gambar tidak tersimpan) --}}
