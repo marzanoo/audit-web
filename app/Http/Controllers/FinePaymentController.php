@@ -22,32 +22,57 @@ class FinePaymentController extends Controller
 
     public function paymentSubmit(Request $request)
     {
-        $request->validate([
-            'amount' => 'required|numeric|min:1',
-            'name' => 'required|string|max:255',
-        ]);
-        $karyawan = Karyawan::where('emp_name', 'like', "%$request->name%")->firstOrFail();
-        $empId = $karyawan->emp_id;
-        $totalDue = EmployeeFine::getTotalDue($empId);
-        if ($request->amount > $totalDue) {
-            return redirect()->back()->with(['fine_payment_error' => 'Jumlah pembayaran tidak boleh melebihi total denda']);
+        try {
+            $request->validate([
+                'amount' => 'required|numeric|min:1',
+                'name' => 'required|string|max:255',
+            ]);
+
+            Log::info('Payment validation passed', ['request' => $request->all()]);
+
+            $karyawan = Karyawan::where('emp_name', 'like', "%$request->name%")->firstOrFail();
+            $empId = $karyawan->emp_id;
+            $totalDue = EmployeeFine::getTotalDue($empId);
+
+            Log::info('Found employee and total due', [
+                'empId' => $empId,
+                'totalDue' => $totalDue
+            ]);
+
+            if ($request->amount > $totalDue) {
+                return redirect()->back()->with(['fine_payment_error' => 'Jumlah pembayaran tidak boleh melebihi total denda']);
+            }
+
+            if ($request->amount <= 0) {
+                return redirect()->back()->with(['fine_payment_error' => 'Jumlah pembayaran harus lebih dari 0']);
+            }
+
+            $payment = EmployeeFine::create([
+                'emp_id' => $empId,
+                'type' => 'payment',
+                'amount' => $request->amount,
+                'description' => "Pembayaran cicil denda via cash",
+                'evidence_path' => null,
+                'payment_method' => 'cash',
+                'paid_at' => Carbon::now(),
+                'status' => 'paid',
+            ]);
+
+            Log::info('Payment created successfully', ['payment' => $payment]);
+
+            $this->sendPaymentEmail($payment);
+
+            return redirect()->route('payment-fines')->with(['fine_payment_success' => 'Pembayaran berhasil.']);
+        } catch (\Exception $e) {
+            Log::error('Payment submission failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()->back()->with([
+                'fine_payment_error' => 'Terjadi kesalahan saat memproses pembayaran: ' . $e->getMessage()
+            ]);
         }
-        if ($request->amount <= 0) {
-            return redirect()->back()->with(['fine_payment_error' => 'Jumlah pembayaran harus lebih dari 0']);
-        }
-        $payment = EmployeeFine::create([
-            'emp_id' => $empId,
-            'type' => 'payment',
-            'amount' => $request->amount,
-            'description' => "Pembayaran cicil denda via cash",
-            'evidence_path' => null, // Tidak ada bukti untuk pembayaran manual
-            'payment_method' => 'cash',
-            'paid_at' => Carbon::now(),
-            'status' => 'paid', // Status langsung paid untuk pembayaran manual
-        ]);
-        // Kirim email bukti pembayaran ke user
-        $this->sendPaymentEmail($payment);
-        return redirect()->back()->with(['fine_payment_success' => 'Pembayaran berhasil.']);
     }
 
     protected function sendPaymentEmail($payment)
